@@ -4,10 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🧠 3M — I Message to You About My Mind.</title>
-
-  <!-- HTMX (from unpkg) -->
-  <script src="https://unpkg.com/htmx.org"></script>
-
   <style>
     :root{font-family: system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif}
     body{padding:20px;max-width:900px;margin:0 auto;background:#f7f9fb;color:#111}
@@ -29,425 +25,305 @@
   </style>
 </head>
 <body>
-
-  <!-- ページ全体の見出し・説明（変更無し） -->
   <h1>🧠 3M — I Message to You About My Mind.</h1>
   <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
 
-  <!-- アプリ本体を差し替えるターゲット -->
-  <main id="app" class="card" hx-swap-oob="false">
-    <!-- 初期表示はフェーズ1テンプレートを読み込む（同ページのフラグメントを取得） -->
-    <div hx-get="index.html #phase1-template" hx-trigger="load" hx-swap="innerHTML"></div>
-  </main>
+  <!-- フェーズ1 -->
+  <section class="card" id="phase1">
+    <h2>フェーズ1 — ありのまま入力</h2>
+    <p class="small">思ったことをそのまま書き出します（長文可）。</p>
+    <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
+    <div style="margin-top:10px"><button id="toPhase2">5つに分解する → フェーズ2</button></div>
+  </section>
 
-  <!-- ===== 以下、各フェーズの「テンプレート」群（同ページのフラグメントとして参照されます） ===== -->
-  <!-- これらは静的に同ページ内に置かれ、htmx の hx-get で差し替えられます。 -->
-  <div id="phase1-template" style="display:none">
-    <section id="phase1" class="card">
-      <h2>フェーズ1 — ありのまま入力</h2>
-      <p class="small">思ったことをそのまま書き出します（長文可）。</p>
-      <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
-      <div style="margin-top:10px">
-        <!-- htmx で同ページのフェーズ2テンプレートを取得して置き換える -->
-        <button id="toPhase2" hx-get="index.html #phase2-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase2()">5つに分解する → フェーズ2</button>
-      </div>
-    </section>
-  </div>
+  <!-- フェーズ2 -->
+  <section class="card" id="phase2" style="display:none">
+    <h2>フェーズ2 — 5つの要素に分解</h2>
+    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
+    <ul id="elementsList"></ul>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="backTo1" class="secondary">戻る</button>
+      <button id="toPhase3">優先度チェック → フェーズ3</button>
+    </div>
+  </section>
 
-  <div id="phase2-template" style="display:none">
-    <section id="phase2" class="card">
-      <h2>フェーズ2 — 5つの要素に分解</h2>
-      <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
-      <ul id="elementsList"></ul>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <!-- 戻るは同ページフラグメントでフェーズ1を取得 -->
-        <button id="backTo1" class="secondary" hx-get="index.html #phase1-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase1()">戻る</button>
-        <button id="toPhase3" hx-get="index.html #phase3-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase3()">優先度チェック → フェーズ3</button>
-      </div>
-    </section>
-  </div>
+  <!-- フェーズ3 -->
+  <section class="card" id="phase3" style="display:none">
+    <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
+    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
+    <ul id="priorityList"></ul>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="backTo2" class="secondary">戻る</button>
+      <button id="toPhase4">3つに絞る → フェーズ4</button>
+    </div>
+  </section>
 
-  <div id="phase3-template" style="display:none">
-    <section id="phase3" class="card">
-      <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
-      <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
-      <ul id="priorityList"></ul>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="backTo2" class="secondary" hx-get="index.html #phase2-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase2()">戻る</button>
-        <button id="toPhase4" hx-get="index.html #phase4-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase4()">3つに絞る → フェーズ4</button>
-      </div>
-    </section>
-  </div>
+  <!-- フェーズ4 -->
+  <section class="card" id="phase4" style="display:none">
+    <h2>フェーズ4 — 3つの要素に優先順位を付ける</h2>
+    <p class="small">上下ボタンで順序を調整してください（上が伝える順序の優先度高）。</p>
+    <ul id="orderedList"></ul>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="backTo3" class="secondary">戻る</button>
+      <button id="toPhase5">文章を組み立てる → フェーズ5</button>
+    </div>
+  </section>
 
-  <div id="phase4-template" style="display:none">
-    <section id="phase4" class="card">
-      <h2>フェーズ4 — 3つの要素に優先順位を付ける</h2>
-      <p class="small">上下ボタンで順序を調整してください（上が伝える順序の優先度高）。</p>
-      <ul id="orderedList"></ul>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="backTo3" class="secondary" hx-get="index.html #phase3-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase3()">戻る</button>
-        <button id="toPhase5" hx-get="index.html #phase5-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase5()">文章を組み立てる → フェーズ5</button>
-      </div>
-    </section>
-  </div>
+  <!-- フェーズ5 -->
+  <section class="card" id="phase5" style="display:none">
+    <h2>フェーズ5 — 相手に伝える文章を作る</h2>
+    <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
+    <div>
+      <label class="small">冒頭（目的）</label>
+      <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
+    </div>
+    <ul id="finalInputs"></ul>
+    <div style="margin-top:8px">
+      <label class="small">締め（お願い／確認）</label>
+      <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="backTo4" class="secondary">戻る</button>
+      <button id="toPhase6">完成 → フェーズ6</button>
+    </div>
+  </section>
 
-  <div id="phase5-template" style="display:none">
-    <section id="phase5" class="card">
-      <h2>フェーズ5 — 相手に伝える文章を作る</h2>
-      <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
-      <div>
-        <label class="small">冒頭（目的）</label>
-        <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
-      </div>
-      <ul id="finalInputs"></ul>
-      <div style="margin-top:8px">
-        <label class="small">締め（お願い／確認）</label>
-        <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="backTo4" class="secondary" hx-get="index.html #phase4-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase4()">戻る</button>
-        <button id="toPhase6" hx-get="index.html #phase6-template" hx-swap="innerHTML" hx-on="htmx:afterSwap: initPhase6()">完成 → フェーズ6</button>
-      </div>
-    </section>
-  </div>
+  <!-- フェーズ6 -->
+  <section class="card" id="phase6" style="display:none">
+    <h2>フェーズ6 — 完成</h2>
+    <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
+    <div class="final" id="finalMessage" contenteditable="false"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="copyBtn">コピー</button>
+      <button id="editBtn" class="secondary">編集する</button>
+      <button id="resetBtn" class="secondary">最初からやり直す</button>
+    </div>
+  </section>
 
-  <div id="phase6-template" style="display:none">
-    <section id="phase6" class="card">
-      <h2>フェーズ6 — 完成</h2>
-      <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
-      <div class="final" id="finalMessage" contenteditable="false"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="copyBtn">コピー</button>
-        <button id="editBtn" class="secondary">編集する</button>
-        <button id="resetBtn" class="secondary">最初からやり直す</button>
-        <!-- PDFボタンはここで動的に追加されます（initPhase6で生成） -->
-      </div>
-    </section>
-  </div>
-
-  <!-- ===== ここまでテンプレート群 ===== -->
-  <!-- スクリプト: フェーズ間のロジック（以前の機能を保ちつつ、htmx 用 init 関数を用意） -->
   <script>
-    /* ===========================================================
-       HTMX + 既存ロジックの統合版スクリプト
-       - フェーズの切り替えは htmx が行う（hx-get / hx-swap）
-       - 各フェーズ差し替え後に実行する初期化関数を用意（initPhase1..6）
-       - 元の機能（文分割・スコア計算・並び替え・最終出力・危険語検出）は維持
-       - 同ページフラグメント取得なので GitHub Pages の静的ホスティングで動作します
-       =========================================================== */
-
-    // --- 共通ユーティリティ ---
-    function qs(sel){ return document.querySelector(sel); }
-    function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
-
-    function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
+    // ユーティリティ: 文の分割（日本語・英語対応）
     function splitIntoPieces(text, maxPieces){
       if(!text) return Array.from({length:maxPieces},()=>"");
+      // まず行で分割
       let pieces = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      // さらに文末句読点で分割
       pieces = pieces.flatMap(p => p.split(/(?<=[。．.!?？])\s*/));
       pieces = pieces.map(s=>s.trim()).filter(Boolean);
+      // If still more than maxPieces, join short ones
       if(pieces.length > maxPieces){
+        // try to merge from end
         while(pieces.length > maxPieces){
           let a = pieces.splice(pieces.length-2,2).join(' ');
           pieces.push(a);
         }
       }
+      // pad
       while(pieces.length < maxPieces) pieces.push("");
       return pieces.slice(0,maxPieces);
     }
 
-    function containsSelfHarmKeywords(text){
-      if(!text) return false;
-      const keywords = ['死にたい','自殺','希死','消えたい','首を','殺して','終わりにしたい','死んで'];
-      const t = (text||'').replace(/\s+/g,'');
-      return keywords.some(k=>t.includes(k));
-    }
+    const qs = sel => document.querySelector(sel);
+    const qsa = sel => Array.from(document.querySelectorAll(sel));
 
-    /* ===========================================================
-       各フェーズの初期化関数
-       htmx がテンプレートを差し替えた直後に呼び出すことを想定
-       （例: hx-on="htmx:afterSwap: initPhase2()" など）
-       =========================================================== */
-
-    // フェーズ1: textarea の入力監視（危険語検出）を設定
-    function initPhase1(){
-      const raw = qs('#rawText');
-      if(!raw) return;
-      // remove any existing listeners by cloning
-      const rawClone = raw.cloneNode(true);
-      raw.parentNode.replaceChild(rawClone, raw);
-
-      // banner（トップ）を確実に用意
-      let banner = qs('#__3m_banner__');
-      if(!banner){
-        banner = document.createElement('div');
-        banner.id = '__3m_banner__';
-        banner.style.padding='10px';
-        banner.style.borderRadius='8px';
-        banner.style.marginTop='10px';
-        document.body.insertBefore(banner, document.body.firstChild.nextSibling);
-      }
-      banner.style.display = 'none';
-
-      rawClone.addEventListener('input', ()=>{
-        const v = rawClone.value || '';
-        if(containsSelfHarmKeywords(v)){
-          banner.style.display='block';
-          banner.innerHTML = '<strong class=\"danger\">もし今すぐに危険を感じているなら、いますぐ最寄りの緊急連絡（119）または警察（110）へ連絡してください。専門の相談も利用できます。ページ下部の支援情報を確認してください。</strong>';
-        } else {
-          banner.style.display='none';
-        }
-      });
-
-      // ensure the "toPhase2" button exists in this fragment and works (htmx takes care of swap)
-      // nothing else required here
-    }
-
-    // フェーズ2: elementsList を作成し、＋−ボタンの挙動をセット
-    function initPhase2(){
-      const raw = qs('#rawText');
-      const arr = splitIntoPieces(raw ? raw.value.trim() : '', 5);
-      const ul = qs('#elementsList');
-      if(!ul) return;
-      ul.innerHTML = '';
+    // Phase 1 -> 2
+    qs('#toPhase2').addEventListener('click', ()=>{
+      const raw = qs('#rawText').value.trim();
+      const arr = splitIntoPieces(raw,5);
+      const ul = qs('#elementsList'); ul.innerHTML = '';
       arr.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className = 'item';
-        li.innerHTML = `
-          <div style="flex:1">
-            <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
-          </div>
-          <div class="controls">
-            <button class="secondary" data-action="add" data-index="${i}">＋</button>
-            <button class="secondary" data-action="del" data-index="${i}">－</button>
-          </div>
-        `;
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="add" data-index="${i}">＋</button>\n            <button class="secondary" data-action="del" data-index="${i}">－</button>\n          </div>\n        `;
         ul.appendChild(li);
       });
+      qs('#phase1').style.display='none'; qs('#phase2').style.display='block';
+    });
 
-      // delegate clicks inside elementsList
-      ul.addEventListener('click', function handler(ev){
-        const b = ev.target.closest('button'); if(!b) return;
-        const action = b.dataset.action; const idx = Number(b.dataset.index);
-        const inputs = qsa('.elementInput').map(x=>x.value);
-        if(action==='add') inputs.splice(idx+1,0,'');
-        if(action==='del') inputs.splice(idx,1);
-        while(inputs.length < 5) inputs.push('');
-        while(inputs.length > 5) inputs.pop();
-        // rebuild
-        ul.innerHTML = '';
-        inputs.forEach((t,i)=>{
-          const li = document.createElement('li'); li.className='item';
-          li.innerHTML = `
-            <div style="flex:1">
-              <label class="small">要素 ${i+1}</label>
-              <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
-            </div>
-            <div class="controls">
-              <button class="secondary" data-action="add" data-index="${i}">＋</button>
-              <button class="secondary" data-action="del" data-index="${i}">－</button>
-            </div>`;
-          ul.appendChild(li);
-        });
-      }, {once:false});
-    }
+    qs('#backTo1').addEventListener('click', ()=>{qs('#phase2').style.display='none';qs('#phase1').style.display='block';});
 
-    // フェーズ3: priorityList を作成（各要素に緊急性・重要性・ピン）
-    function initPhase3(){
-      // collect current element inputs if present
-      const existing = qsa('.elementInput').map(i=>i.value.trim());
-      // if none, try fallback to raw splitting
-      let full = existing.length ? existing : splitIntoPieces(qs('#rawText') ? qs('#rawText').value.trim() : '', 5);
+    // allow add/delete element fields
+    qs('#elementsList').addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button'); if(!b) return;
+      const action = b.dataset.action; const idx = Number(b.dataset.index);
+      const inputs = qsa('.elementInput').map(x=>x.value);
+      if(action==='add') inputs.splice(idx+1,0,'');
+      if(action==='del') inputs.splice(idx,1);
+      // normalize to 5 slots
+      while(inputs.length < 5) inputs.push('');
+      while(inputs.length > 5) inputs.pop();
+      // rebuild
+      const ul = qs('#elementsList'); ul.innerHTML='';
+      inputs.forEach((t,i)=>{
+        const li = document.createElement('li'); li.className='item'; li.innerHTML=`\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="add" data-index="${i}">＋</button>\n            <button class="secondary" data-action="del" data-index="${i}">－</button>\n          </div>`;
+        ul.appendChild(li);
+      });
+    });
 
-      const ul = qs('#priorityList');
-      if(!ul) return;
-      ul.innerHTML = '';
+    // Phase2 -> Phase3
+    qs('#toPhase3').addEventListener('click', ()=>{
+      const elems = qsa('.elementInput').map(i=>i.value.trim()).filter(Boolean);
+      // ensure we still have 5 slots (including empty)
+      const full = qsa('.elementInput').map(i=>i.value.trim());
+      const ul = qs('#priorityList'); ul.innerHTML='';
       full.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item';
-        li.innerHTML = `
-          <div style="flex:1">
-            <label class="small">要素 ${i+1}</label>
-            <input type="text" class="ptext" data-i="${i}" value="${escapeHtml(t)}" />
-          </div>
-          <div style="width:220px">
-            <label class="small">緊急性 (0-5)</label>
-            <input type="number" class="urg" min="0" max="5" value="0" />
-            <label class="small">重要性 (0-5)</label>
-            <input type="number" class="imp" min="0" max="5" value="0" />
-            <div style="margin-top:6px"><input type="checkbox" class="pin" /> ピン留め（必ず残す）</div>
-          </div>
-        `;
+        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" class="ptext" data-i="${i}" value="${escapeHtml(t)}" />\n          </div>\n          <div style="width:220px">\n            <label class="small">緊急性 (0-5)</label>\n            <input type="number" class="urg" min="0" max="5" value="0" />\n            <label class="small">重要性 (0-5)</label>\n            <input type="number" class="imp" min="0" max="5" value="0" />\n            <div style="margin-top:6px"><input type="checkbox" class="pin" /> ピン留め（必ず残す）</div>\n          </div>\n        `;
         ul.appendChild(li);
       });
-    }
+      qs('#phase2').style.display='none'; qs('#phase3').style.display='block';
+    });
 
-    // フェーズ4: 上位3つを orderedList にレンダリング（並べ替えボタンの動作も設定）
-    function initPhase4(){
-      // try to pull items from priorityList inputs if exist
-      const priItems = qsa('#priorityList .item');
-      let items;
-      if(priItems && priItems.length){
-        items = priItems.map(li=>{
-          const text = li.querySelector('.ptext').value.trim();
-          const urg = Number(li.querySelector('.urg').value)||0;
-          const imp = Number(li.querySelector('.imp').value)||0;
-          const pin = li.querySelector('.pin').checked;
-          return {text,urg,imp,pin,score:urg+imp};
-        }).filter(x=>x.text);
-      } else {
-        // fallback: use elementInput or raw
-        const elInputs = qsa('.elementInput').map(i=>i.value.trim()).filter(Boolean);
-        items = elInputs.map(t=>({text:t,urg:0,imp:0,pin:false,score:0}));
-      }
+    qs('#backTo2').addEventListener('click', ()=>{qs('#phase3').style.display='none';qs('#phase2').style.display='block';});
 
+    // Phase3 -> Phase4 (select top3)
+    qs('#toPhase4').addEventListener('click', ()=>{
+      const items = qsa('#priorityList .item').map(li=>{
+        const text = li.querySelector('.ptext').value.trim();
+        const urg = Number(li.querySelector('.urg').value)||0;
+        const imp = Number(li.querySelector('.imp').value)||0;
+        const pin = li.querySelector('.pin').checked;
+        return {text,urg,imp,pin,score:urg+imp};
+      }).filter(x=>x.text);
+      // if none, block
+      if(items.length===0){alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。'); return;}
+      // sort
       items.sort((a,b)=> (b.score - a.score) || (b.imp - a.imp));
+      // make sure pinned ones included
       const pinned = items.filter(i=>i.pin);
       let top = items.slice(0,3);
+      // ensure pinned included
       pinned.forEach(p=>{ if(!top.includes(p)) { top.pop(); top.push(p); } });
+      // unique and trim
       top = Array.from(new Set(top)).slice(0,3);
+      // if less than 3, pad with empty
       while(top.length<3) top.push({text:'',urg:0,imp:0,score:0});
 
-      const ul = qs('#orderedList'); if(!ul) return;
-      ul.innerHTML = '';
+      // render orderedList
+      const ul = qs('#orderedList'); ul.innerHTML='';
       top.forEach((it,idx)=>{
         const li = document.createElement('li'); li.className='item draggable';
-        li.innerHTML = `
-          <div style="flex:1">
-            <label class="small">優先 ${idx+1}</label>
-            <input type="text" class="ordtext" data-idx="${idx}" value="${escapeHtml(it.text)}" />
-          </div>
-          <div class="controls">
-            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
-            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>
-          </div>
-        `;
+        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">優先 ${idx+1}</label>\n            <input type="text" class="ordtext" data-idx="${idx}" value="${escapeHtml(it.text)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>\n            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>\n          </div>\n        `;
         ul.appendChild(li);
       });
 
-      // delegate click handling for up/down
-      ul.addEventListener('click', (ev)=>{
-        const b = ev.target.closest('button'); if(!b) return;
-        const action = b.dataset.action; const idx = Number(b.dataset.idx);
-        const inputs = qsa('.ordtext').map(i=>i.value);
-        if(action==='up' && idx>0){ [inputs[idx-1],inputs[idx]] = [inputs[idx],inputs[idx-1]]; }
-        if(action==='down' && idx < inputs.length-1){ [inputs[idx+1],inputs[idx]] = [inputs[idx],inputs[idx+1]]; }
-        // rerender
-        ul.innerHTML = '';
-        inputs.forEach((t,i)=>{
-          const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `
-            <div style="flex:1">
-              <label class="small">優先 ${i+1}</label>
-              <input type="text" class="ordtext" data-idx="${i}" value="${escapeHtml(t)}" />
-            </div>
-            <div class="controls">
-              <button class="secondary" data-action="up" data-idx="${i}">↑</button>
-              <button class="secondary" data-action="down" data-idx="${i}">↓</button>
-            </div>`;
-          ul.appendChild(li);
-        });
-      }, {once:false});
-    }
+      qs('#phase3').style.display='none'; qs('#phase4').style.display='block';
+    });
 
-    // フェーズ5: orderedList の入力から finalInputs を作成
-    function initPhase5(){
+    qs('#backTo3').addEventListener('click', ()=>{qs('#phase4').style.display='none';qs('#phase3').style.display='block';});
+
+    // reorder up/down
+    qs('#orderedList').addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button'); if(!b) return;
+      const action = b.dataset.action; const idx = Number(b.dataset.idx);
+      const inputs = qsa('.ordtext').map(i=>i.value);
+      if(action==='up' && idx>0){ [inputs[idx-1],inputs[idx]] = [inputs[idx],inputs[idx-1]]; }
+      if(action==='down' && idx < inputs.length-1){ [inputs[idx+1],inputs[idx]] = [inputs[idx],inputs[idx+1]]; }
+      // rerender
+      const ul = qs('#orderedList'); ul.innerHTML='';
+      inputs.forEach((t,i)=>{
+        const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">優先 ${i+1}</label>\n            <input type="text" class="ordtext" data-idx="${i}" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="up" data-idx="${i}">↑</button>\n            <button class="secondary" data-action="down" data-idx="${i}">↓</button>\n          </div>`;
+        ul.appendChild(li);
+      });
+    });
+
+    // Phase4 -> Phase5
+    qs('#toPhase5').addEventListener('click', ()=>{
       const arr = qsa('.ordtext').map(i=>i.value.trim()).filter(Boolean);
-      const ul = qs('#finalInputs');
-      if(!ul) return;
-      ul.innerHTML = '';
+      if(arr.length===0){ alert('優先する要素がありません。戻って要素を整理してください。'); return; }
+      const ul = qs('#finalInputs'); ul.innerHTML='';
       arr.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item';
-        li.innerHTML = `
-          <div style="flex:1">
-            <label class="small">伝える文 ${i+1}（短く具体的に）</label>
-            <textarea rows="2" class="finalPiece">${escapeHtml(t)}</textarea>
-          </div>
-        `;
+        const li = document.createElement('li'); li.className='item'; li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">伝える文 ${i+1}（短く具体的に）</label>\n            <textarea rows="2" class="finalPiece">${escapeHtml(t)}</textarea>\n          </div>`;
         ul.appendChild(li);
       });
-    }
+      qs('#phase4').style.display='none'; qs('#phase5').style.display='block';
+    });
 
-    // フェーズ6: finalMessage を生成し、コピー・編集・PDFボタンの動作をセット
-    function initPhase6(){
-      // build the final message from intro, pieces, closing
-      const introEl = qs('#intro');
-      const closingEl = qs('#closing');
+    qs('#backTo4').addEventListener('click', ()=>{qs('#phase5').style.display='none';qs('#phase4').style.display='block';});
+
+    // Phase5 -> Phase6
+    qs('#toPhase6').addEventListener('click', ()=>{
+      const intro = qs('#intro').value.trim();
+      const closing = qs('#closing').value.trim();
       const pieces = qsa('.finalPiece').map(t=>t.value.trim()).filter(Boolean);
+      const final = buildFinalMessage(intro,pieces,closing);
+      qs('#finalMessage').textContent = final;
+      qs('#phase5').style.display='none'; qs('#phase6').style.display='block';
+    });
 
-      const final = buildFinalMessage(introEl ? introEl.value.trim() : '', pieces, closingEl ? closingEl.value.trim() : '');
-      const finalMessageEl = qs('#finalMessage');
-      if(finalMessageEl) finalMessageEl.textContent = final;
+    qs('#backTo3'); // noop
 
-      // copy button
-      const copyBtn = qs('#copyBtn');
-      if(copyBtn){
-        copyBtn.addEventListener('click', ()=>{
-          const txt = (qs('#finalMessage') && qs('#finalMessage').textContent) || '';
-          navigator.clipboard?.writeText(txt).then(()=>alert('文章をコピーしました。'));
-        }, {once:false});
-      }
+    // copy
+    qs('#copyBtn').addEventListener('click', ()=>{
+      const txt = qs('#finalMessage').textContent;
+      navigator.clipboard?.writeText(txt).then(()=>alert('文章をコピーしました。'));    
+    });
+    qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
+    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) location.reload(); });
 
-      // edit button
-      const editBtn = qs('#editBtn');
-      if(editBtn){
-        editBtn.addEventListener('click', ()=>{ const el = qs('#finalMessage'); if(el){ el.contentEditable = true; el.focus(); } }, {once:false});
-      }
-
-      // reset button
-      const resetBtn = qs('#resetBtn');
-      if(resetBtn){
-        resetBtn.addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) {
-          // navigate back to phase1 template via htmx
-          htmx.ajax('GET', 'index.html #phase1-template', {target:'#app', swap:'innerHTML'});
-        } }, {once:false});
-      }
-
-      // Add PDF button if not already present
-      if(!qs('#pdfBtn')){
-        const parent = qs('#phase6') && qs('#phase6').querySelector('div[style*="gap:8px"]');
-        if(parent){
-          const pdfBtn = document.createElement('button');
-          pdfBtn.id = 'pdfBtn';
-          pdfBtn.textContent = '🖨️ PDFとして保存';
-          pdfBtn.style.marginLeft = '8px';
-          parent.appendChild(pdfBtn);
-          // attach pdf generation using html2canvas + jsPDF (load libs dynamically)
-          pdfBtn.addEventListener('click', handlePdfClick);
-        }
-      }
-    }
-
-    // build final message helper
+    // helpers
     function buildFinalMessage(intro,pieces,closing){
       const lines = [];
       if(intro) lines.push(intro);
       pieces.forEach((p,i)=>{
+        // short prefix like "1.", but keep concise
         lines.push((i+1) + '. ' + p);
       });
       if(closing) lines.push(closing);
       return lines.join('\n');
     }
 
-    /* ===========================================================
-       PDF 生成ロジック（html2canvas + jsPDF を動的にロード）
-       - GitHub Pages の静的環境でも動作（CDN読み込み）
-       - エラーを極力捕捉して、ユーザーに明確な通知を行う
-       =========================================================== */
+    function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+    // Warn: if certain keywords appear (suicide), show resource hint
+    function containsSelfHarmKeywords(text){
+      if(!text) return false;
+      const keywords = ['死にたい','自殺','希死','消えたい','首を','殺して','終わりにしたい','死んで'];
+      const t = text.replace(/\s+/g,'');
+      return keywords.some(k=>t.includes(k));
+    }
+
+    // Monitor rawText for high-risk words and show a subtle warning banner
+    const banner = document.createElement('div'); banner.style.padding='10px'; banner.style.borderRadius='8px'; banner.style.marginTop='10px';
+    document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+    banner.style.display='none';
+
+    qs('#rawText').addEventListener('input', ()=>{
+      const v = qs('#rawText').value;
+      if(containsSelfHarmKeywords(v)){
+        banner.style.display='block'; banner.innerHTML = '<strong class="danger">もし今すぐに危険を感じているなら、いますぐ最寄りの緊急連絡（119）または警察（110）へ連絡してください。専門の相談も利用できます。ページ下部の支援情報を確認してください。</strong>';
+      } else { banner.style.display='none'; }
+    });
+
+    // add a small footer with resources (static list)
+    const footer = document.createElement('div'); footer.className='card'; footer.style.marginTop='20px'; footer.innerHTML = `
+      <h3>支援・相談窓口（例）</h3>
+      <p class="small">緊急でない場合や話を聴いてほしい場合は下の窓口も利用できます。 <span class="small">（地域によって窓口や番号は異なります）</span></p>
+      <ul class="small">
+        <li>TELL Lifeline（英語）: +81-3-5774-0992（ウェブでLifelineの時間を確認してください）</li>
+        <li>いのちの電話（地域窓口）: 各地域で24時間相談を提供する場合があります（自治体の案内をご確認ください）</li>
+        <li>緊急なら: 119（救急） / 110（警察）</li>
+      </ul>
+    `;
+    document.body.appendChild(footer);
+
+    const pdfBtn = document.createElement('button');
+    pdfBtn.textContent = '🖨️ PDFとして保存';
+    pdfBtn.style.marginLeft = '8px';
+    pdfBtn.id = 'pdfBtn';
+    qs('#phase6').querySelector('div[style*="gap:8px"]').appendChild(pdfBtn);
+
+    // jsPDF + html2canvasをCDNから動的ロード
     async function loadScript(src){
-      return new Promise((resolve,reject)=>{
-        const existing = Array.from(document.getElementsByTagName('script')).find(s=>s.src && s.src.indexOf(src) !== -1);
-        if(existing){ existing.addEventListener('load', ()=>resolve()); if(existing.readyState === 'complete') resolve(); return; }
+      return new Promise((resolve, reject)=>{
         const s = document.createElement('script');
         s.src = src;
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error('Failed to load ' + src));
+        s.onload = resolve;
+        s.onerror = reject;
         document.head.appendChild(s);
       });
     }
 
     async function ensureLibs(){
-      // html2canvas
       if(!window.html2canvas){
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
       }
@@ -456,17 +332,16 @@
       }
     }
 
-    async function handlePdfClick(){
-      const pdfBtn = qs('#pdfBtn');
-      if(!pdfBtn) return;
+    pdfBtn.addEventListener('click', async ()=>{
       try {
         pdfBtn.disabled = true;
         pdfBtn.textContent = 'PDF生成中...';
 
         await ensureLibs();
+
         const { jsPDF } = window.jspdf;
 
-        // create a sanitized card element for capture
+        // カード風に装飾された要素を作成してキャプチャ
         const card = document.createElement('div');
         card.style.padding = '20px';
         card.style.background = 'white';
@@ -474,23 +349,24 @@
         card.style.boxShadow = '0 6px 18px rgba(20,30,60,0.08)';
         card.style.width = '700px';
         card.style.fontFamily = 'system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
-        const finalText = qs('#finalMessage') ? qs('#finalMessage').textContent : '';
         card.innerHTML = `
-          <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — My Message About My Mind</h2>
-          <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(finalText)}</div>
+          <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — I Message to You about My Mind.</h2>
+          <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(qs('#finalMessage').textContent)}</div>
           <hr style="margin:20px 0;">
-          <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 3M — Mental Message Maker</p>
+          <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 🧠 3M — I Message to You about My Mind.</p>
         `;
         document.body.appendChild(card);
 
-        // html2canvas capture
         const canvas = await html2canvas(card, {scale:2});
         const imgData = canvas.toDataURL('image/png');
 
         const pdf = new jsPDF({orientation:'p', unit:'px', format:'a4'});
         const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
         const imgWidth = pageWidth - 40;
         const imgHeight = canvas.height * imgWidth / canvas.width;
+
         pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
         pdf.save('3M_Message.pdf');
 
@@ -499,54 +375,11 @@
         pdfBtn.disabled = false;
       } catch(err){
         console.error(err);
-        alert('PDF生成中にエラーが発生しました。ネットワーク状態を確認し、再度お試しください。');
-        if(pdfBtn){ pdfBtn.textContent = '🖨️ PDFとして保存'; pdfBtn.disabled = false; }
+        alert('PDF生成中にエラーが発生しました。再度お試しください。');
+        pdfBtn.textContent = '🖨️ PDFとして保存';
+        pdfBtn.disabled = false;
       }
-    }
-
-    /* ===========================================================
-       初回ロード時の初期化
-       - htmx が最初に #phase1-template を差し替えた後に initPhase1 を呼ぶため、
-         onLoad 時点では #app 内にフェーズ1が読み込まれた後に initPhase1 を手動で呼ぶ
-       =========================================================== */
-
-    // htmx がフラグメント差し替えを行った直後に呼ばれるイベントを利用して各 init を呼ぶ
-    document.body.addEventListener('htmx:afterSwap', function(evt){
-      // evt.detail.target is the element that was swapped into place
-      const target = evt.detail && evt.detail.target;
-      // if the swapped in fragment contains phase1 etc., call corresponding init
-      if(target && target.querySelector && target.querySelector('#phase1')) initPhase1();
-      if(target && target.querySelector && target.querySelector('#phase2')) initPhase2();
-      if(target && target.querySelector && target.querySelector('#phase3')) initPhase3();
-      if(target && target.querySelector && target.querySelector('#phase4')) initPhase4();
-      if(target && target.querySelector && target.querySelector('#phase5')) initPhase5();
-      if(target && target.querySelector && target.querySelector('#phase6')) initPhase6();
     });
-
-    // Additionally, when the page first loads, htmx will have requested phase1-template
-    // but to ensure initialization, we call initPhase1 after a short delay if #rawText exists.
-    window.addEventListener('load', function(){
-      setTimeout(()=>{ if(qs('#rawText')) initPhase1(); }, 50);
-    });
-
-    /* ===========================================================
-       Footer: 支援情報（同テキストは変更しないでそのまま表示）
-       - ここはページ下部に一度だけ差し込むため、スクリプト末尾で追加します
-       =========================================================== */
-    (function appendFooter(){
-      const footer = document.createElement('div'); footer.className='card'; footer.style.marginTop='20px';
-      footer.innerHTML = `
-        <h3>支援・相談窓口（例）</h3>
-        <p class="small">緊急でない場合や話を聴いてほしい場合は下の窓口も利用できます。 <span class="small">（地域によって窓口や番号は異なります）</span></p>
-        <ul class="small">
-          <li>TELL Lifeline（英語）: +81-3-5774-0992（ウェブでLifelineの時間を確認してください）</li>
-          <li>いのちの電話（地域窓口）: 各地域で24時間相談を提供する場合があります（自治体の案内をご確認ください）</li>
-          <li>緊急なら: 119（救急） / 110（警察）</li>
-        </ul>
-      `;
-      document.body.appendChild(footer);
-    })();
-
   </script>
 </body>
 </html>
