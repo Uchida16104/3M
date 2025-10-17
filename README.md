@@ -6,7 +6,7 @@
 
 ## 🌱 概要
 
-**3M**（読み：「スリーエム」 / Three Message Steps to Mind Clarity）は、  
+**3M**（読み：「スリーエム」 / I Message to You About My Mind）は、  
 「自分の気持ちを整理して、相手に安全に伝える」ことをサポートする  
 **6つのフェーズ構成**の自己表現支援アプリです。
 
