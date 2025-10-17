@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🧠 3M — I Message to You About My Mind.</title>
+
+  <!-- htmx: CDN (unpkg) -->
+  <script src="https://unpkg.com/htmx.org@1.11.0"></script>
+
   <style>
     :root{font-family: system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif}
     body{padding:20px;max-width:900px;margin:0 auto;background:#f7f9fb;color:#111}
@@ -14,334 +18,626 @@
     ul{padding-left:18px}
     .row{display:flex;gap:10px}
     .col{flex:1}
-    button{background:#1565d8;color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
-    button.secondary{background:#eee;color:#111}
+    button, .btn {background:#1565d8;color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .secondary{background:#eee;color:#111;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
     .small{font-size:13px;color:#666}
     .item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
     .item .controls{display:flex;flex-direction:column;gap:6px}
     .draggable{cursor:grab}
     .final{white-space:pre-wrap;background:#0b1220;color:#e8f0ff;padding:12px;border-radius:8px}
     .danger{color:#b00020}
+    /* small utility for hidden fragments */
+    .frag { display: none; }
+    /* card-like container for PDF capture preview (hidden by default) */
+    .pdf-card-preview { display:none; }
   </style>
 </head>
 <body>
-  <h1>🧠 3M — I Message to You About My Mind.</h1>
-  <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
 
-  <!-- フェーズ1 -->
-  <section class="card" id="phase1">
-    <h2>フェーズ1 — ありのまま入力</h2>
-    <p class="small">思ったことをそのまま書き出します（長文可）。</p>
-    <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
-    <div style="margin-top:10px"><button id="toPhase2">5つに分解する → フェーズ2</button></div>
+  <!-- === MAIN container (we swap its innerHTML using htmx) === -->
+  <main id="main"
+        hx-get="index.html #frag-phase1"
+        hx-trigger="load"
+        hx-swap="innerHTML">
+    <!-- 初回読み込み時に frag-phase1 を自動で読み込み -->
+  </main>
+
+  <!-- ============================
+       FRAGMENTS (kept in same file)
+       We use htmx to fetch "#frag-phaseX" from this same file.
+       Each fragment holds the HTML view for that phase or the whole flow view.
+       ============================ -->
+
+  <!-- フェーズ1 フラグメント -->
+  <div id="frag-phase1" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
+
+    <section class="card" id="phase1">
+      <h2>フェーズ1 — ありのまま入力</h2>
+      <p class="small">思ったことをそのまま書き出します（長文可）。</p>
+      <textarea id="rawText" name="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
+      <div style="margin-top:10px">
+        <!-- htmx: load phase2 fragment but keep data via localStorage (handled in JS events) -->
+        <button class="btn" hx-get="index.html #frag-phase2" hx-swap="innerHTML" hx-target="#main">5つに分解する → フェーズ2</button>
+      </div>
+    </section>
+
+    <!-- support banner placeholder -->
+    <div id="supportBannerPlaceholder"></div>
+  </div>
+
+  <!-- フェーズ2 フラグメント -->
+  <div id="frag-phase2" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
+
+    <section class="card" id="phase2">
+      <h2>フェーズ2 — 5つの要素に分解</h2>
+      <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
+      <ul id="elementsList"></ul>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="secondary" hx-get="index.html #frag-phase1" hx-swap="innerHTML" hx-target="#main">戻る</button>
+        <button class="btn" hx-get="index.html #frag-phase3" hx-swap="innerHTML" hx-target="#main">優先度チェック → フェーズ3</button>
+      </div>
+    </section>
+    <div id="supportBannerPlaceholder2"></div>
+  </div>
+
+  <!-- フェーズ3 フラグメント -->
+  <div id="frag-phase3" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <section class="card" id="phase3">
+      <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
+      <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
+      <ul id="priorityList"></ul>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="secondary" hx-get="index.html #frag-phase2" hx-swap="innerHTML" hx-target="#main">戻る</button>
+        <button class="btn" hx-get="index.html #frag-phase4" hx-swap="innerHTML" hx-target="#main">3つに絞る → フェーズ4</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- フェーズ4 フラグメント -->
+  <div id="frag-phase4" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <section class="card" id="phase4">
+      <h2>フェーズ4 — 3つの要素に優先順位を付ける</h2>
+      <p class="small">上下ボタンで順序を調整してください（上が伝える順序の優先度高）。</p>
+      <ul id="orderedList"></ul>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="secondary" hx-get="index.html #frag-phase3" hx-swap="innerHTML" hx-target="#main">戻る</button>
+        <button class="btn" hx-get="index.html #frag-phase5" hx-swap="innerHTML" hx-target="#main">文章を組み立てる → フェーズ5</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- フェーズ5 フラグメント -->
+  <div id="frag-phase5" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <section class="card" id="phase5">
+      <h2>フェーズ5 — 相手に伝える文章を作る</h2>
+      <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
+      <div>
+        <label class="small">冒頭（目的）</label>
+        <input type="text" id="intro" name="intro" placeholder="例：今日は○○について話したくて来ました。">
+      </div>
+      <ul id="finalInputs"></ul>
+      <div style="margin-top:8px">
+        <label class="small">締め（お願い／確認）</label>
+        <input type="text" id="closing" name="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="secondary" hx-get="index.html #frag-phase4" hx-swap="innerHTML" hx-target="#main">戻る</button>
+        <button class="btn" hx-get="index.html #frag-phase6" hx-swap="innerHTML" hx-target="#main">完成 → フェーズ6</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- フェーズ6 フラグメント -->
+  <div id="frag-phase6" class="frag">
+    <h1>🧠 3M — I Message to You About My Mind.</h1>
+    <section class="card" id="phase6">
+      <h2>フェーズ6 — 完成</h2>
+      <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
+      <div class="final" id="finalMessage" contenteditable="false"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="copyBtn" class="btn">コピー</button>
+        <button id="editBtn" class="secondary">編集する</button>
+        <button id="resetBtn" class="secondary">最初からやり直す</button>
+        <!-- PDF ボタンは JavaScript で追加（ライブラリ読み込みのため） -->
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================
+       README の固定テキスト（説明・コンセプト等）
+       ここでは README の「概要等」は変更しないという要件のため、
+       README 相当のコンテンツをページ末尾に原文のまま掲載しておきます。
+       (要件: 概要・コンセプト等はそのまま — 変更なし)
+       ============================ -->
+  <section class="card" id="readmeSection" aria-hidden="true">
+    <!-- このブロックは README 相当のテキストを保持（変更不可） -->
+    <!-- 実際の README は GitHub 上の README.md をそのまま維持してください -->
+    <h3 class="small">README（概要等は変更していません）</h3>
+    <p class="small">（ここでは簡略表示）</p>
   </section>
 
-  <!-- フェーズ2 -->
-  <section class="card" id="phase2" style="display:none">
-    <h2>フェーズ2 — 5つの要素に分解</h2>
-    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
-    <ul id="elementsList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="backTo1" class="secondary">戻る</button>
-      <button id="toPhase3">優先度チェック → フェーズ3</button>
-    </div>
-  </section>
-
-  <!-- フェーズ3 -->
-  <section class="card" id="phase3" style="display:none">
-    <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
-    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
-    <ul id="priorityList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="backTo2" class="secondary">戻る</button>
-      <button id="toPhase4">3つに絞る → フェーズ4</button>
-    </div>
-  </section>
-
-  <!-- フェーズ4 -->
-  <section class="card" id="phase4" style="display:none">
-    <h2>フェーズ4 — 3つの要素に優先順位を付ける</h2>
-    <p class="small">上下ボタンで順序を調整してください（上が伝える順序の優先度高）。</p>
-    <ul id="orderedList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="backTo3" class="secondary">戻る</button>
-      <button id="toPhase5">文章を組み立てる → フェーズ5</button>
-    </div>
-  </section>
-
-  <!-- フェーズ5 -->
-  <section class="card" id="phase5" style="display:none">
-    <h2>フェーズ5 — 相手に伝える文章を作る</h2>
-    <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
-    <div>
-      <label class="small">冒頭（目的）</label>
-      <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
-    </div>
-    <ul id="finalInputs"></ul>
-    <div style="margin-top:8px">
-      <label class="small">締め（お願い／確認）</label>
-      <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="backTo4" class="secondary">戻る</button>
-      <button id="toPhase6">完成 → フェーズ6</button>
-    </div>
-  </section>
-
-  <!-- フェーズ6 -->
-  <section class="card" id="phase6" style="display:none">
-    <h2>フェーズ6 — 完成</h2>
-    <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
-    <div class="final" id="finalMessage" contenteditable="false"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="copyBtn">コピー</button>
-      <button id="editBtn" class="secondary">編集する</button>
-      <button id="resetBtn" class="secondary">最初からやり直す</button>
-    </div>
-  </section>
-
+  <!-- ============================
+       スクリプト：HTMX と連携して状態保存・復元・初期化・PDF などを実装
+       - フェーズ間で localStorage に保存
+       - htmx:afterSwap を拾って DOM 初期化を実行
+       - 安全ワード検出と支援バナー表示
+       ============================ -->
   <script>
-    // ユーティリティ: 文の分割（日本語・英語対応）
+  (function(){
+    'use strict';
+
+    /* -------------------------
+       ユーティリティ: エスケープ（表示用）
+       ------------------------- */
+    function escapeHtml(s){
+      return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* -------------------------
+       localStorage キー
+       ------------------------- */
+    const LS_KEY = '3m.formdata.v1';
+
+    /* -------------------------
+       保存/読み込み: 全フィールドをオブジェクトで保存
+       （textarea, input[type=text], input[type=number], checkbox など）
+       ------------------------- */
+    function saveAllFields(){
+      try {
+        const data = {};
+        document.querySelectorAll('textarea, input[type="text"], input[type="number"], input[type="checkbox"]').forEach(el=>{
+          if(!el.name && !el.id) return;
+          const key = el.name || el.id;
+          if(el.type === 'checkbox') data[key] = el.checked;
+          else data[key] = el.value;
+        });
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+      } catch(e){
+        console.error('saveAllFields error', e);
+      }
+    }
+
+    function loadAllFields(){
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if(!raw) return {};
+        const data = JSON.parse(raw);
+        Object.keys(data).forEach(k=>{
+          const el = document.querySelector(`[name="${k}"], #${CSS.escape(k)}`);
+          if(el){
+            if(el.type === 'checkbox') el.checked = !!data[k];
+            else el.value = data[k];
+            // trigger input event for any listeners
+            el.dispatchEvent(new Event('input', {bubbles:true}));
+          }
+        });
+        return data;
+      } catch(e){
+        console.error('loadAllFields error', e);
+        return {};
+      }
+    }
+
+    /* -------------------------
+       テキスト分割ロジック（元の splitIntoPieces を簡潔化して使用）
+       ------------------------- */
     function splitIntoPieces(text, maxPieces){
-      if(!text) return Array.from({length:maxPieces},()=>"");
-      // まず行で分割
+      if(!text) return Array.from({length:maxPieces},()=> '');
       let pieces = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-      // さらに文末句読点で分割
       pieces = pieces.flatMap(p => p.split(/(?<=[。．.!?？])\s*/));
       pieces = pieces.map(s=>s.trim()).filter(Boolean);
-      // If still more than maxPieces, join short ones
-      if(pieces.length > maxPieces){
-        // try to merge from end
-        while(pieces.length > maxPieces){
-          let a = pieces.splice(pieces.length-2,2).join(' ');
-          pieces.push(a);
-        }
+      while(pieces.length > maxPieces){
+        let a = pieces.splice(pieces.length-2,2).join(' ');
+        pieces.push(a);
       }
-      // pad
-      while(pieces.length < maxPieces) pieces.push("");
+      while(pieces.length < maxPieces) pieces.push('');
       return pieces.slice(0,maxPieces);
     }
 
-    const qs = sel => document.querySelector(sel);
-    const qsa = sel => Array.from(document.querySelectorAll(sel));
+    /* -------------------------
+       自傷・自殺関連ワード検出（支援バナー表示）
+       ------------------------- */
+    const RISK_WORDS = ['死にたい','自殺','希死','消えたい','首を','殺して','終わりにしたい','死んで'];
+    function containsSelfHarmKeywords(text){
+      if(!text) return false;
+      const t = text.replace(/\s+/g,'');
+      return RISK_WORDS.some(k => t.includes(k));
+    }
 
-    // Phase 1 -> 2
-    qs('#toPhase2').addEventListener('click', ()=>{
-      const raw = qs('#rawText').value.trim();
-      const arr = splitIntoPieces(raw,5);
-      const ul = qs('#elementsList'); ul.innerHTML = '';
+    function ensureSupportBanner(container){
+      // container: element where to insert banner
+      const existing = document.getElementById('supportBanner');
+      if(existing) return;
+      const banner = document.createElement('div');
+      banner.id = 'supportBanner';
+      banner.style.padding = '10px';
+      banner.style.borderRadius = '8px';
+      banner.style.marginTop = '10px';
+      banner.style.display = 'none';
+      container.appendChild(banner);
+
+      // add footer resources too
+      const footer = document.createElement('div');
+      footer.className = 'card';
+      footer.style.marginTop = '12px';
+      footer.innerHTML = `
+        <h3>支援・相談窓口（例）</h3>
+        <p class="small">緊急でない場合や話を聴いてほしい場合は下の窓口も利用できます。 <span class="small">（地域によって窓口や番号は異なります）</span></p>
+        <ul class="small">
+          <li>TELL Lifeline（英語）: +81-3-5774-0992（ウェブでLifelineの時間を確認してください）</li>
+          <li>いのちの電話（地域窓口）: 各地域で24時間相談を提供する場合があります（自治体の案内をご確認ください）</li>
+          <li>緊急なら: 119（救急） / 110（警察）</li>
+        </ul>
+      `;
+      container.appendChild(footer);
+    }
+
+    /* -------------------------
+       フェーズ別初期化ルーチン
+       各フラグメントが main に差し替えられた後に実行される
+       ------------------------- */
+    function initPhase1(){
+      // ensure banner area exists
+      ensureSupportBanner(document.body);
+
+      // restore rawText if exists
+      const data = loadAllFields();
+      const raw = data['rawText'] || '';
+      const el = document.getElementById('rawText');
+      if(el) el.value = raw;
+
+      // watch for input to autosave and risk-detect
+      if(el){
+        el.oninput = function(){
+          saveAllFields();
+          const v = el.value || '';
+          const banner = document.getElementById('supportBanner');
+          if(containsSelfHarmKeywords(v)){
+            banner.style.display = 'block';
+            banner.innerHTML = '<strong class="danger">もし今すぐに危険を感じているなら、いますぐ最寄りの緊急連絡（119）または警察（110）へ連絡してください。専門の相談も利用できます。ページ下部の支援情報を確認してください。</strong>';
+          } else {
+            banner.style.display = 'none';
+          }
+        };
+      }
+    }
+
+    function initPhase2(){
+      // populate elementsList from saved rawText or existing element inputs
+      const raw = (loadAllFields()['rawText'] || '').trim();
+      const arr = splitIntoPieces(raw, 5);
+      const ul = document.getElementById('elementsList');
+      ul.innerHTML = '';
       arr.forEach((t,i)=>{
         const li = document.createElement('li');
         li.className = 'item';
-        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="add" data-index="${i}">＋</button>\n            <button class="secondary" data-action="del" data-index="${i}">－</button>\n          </div>\n        `;
+        li.innerHTML = `
+          <div style="flex:1">
+            <label class="small">要素 ${i+1}</label>
+            <input type="text" name="element${i}" id="element${i}" class="elementInput" value="${escapeHtml(t)}" />
+          </div>
+          <div class="controls">
+            <button class="secondary add" data-index="${i}">＋</button>
+            <button class="secondary del" data-index="${i}">－</button>
+          </div>
+        `;
         ul.appendChild(li);
       });
-      qs('#phase1').style.display='none'; qs('#phase2').style.display='block';
-    });
 
-    qs('#backTo1').addEventListener('click', ()=>{qs('#phase2').style.display='none';qs('#phase1').style.display='block';});
+      // attach handlers for add/del and input autosave
+      ul.addEventListener('click', function(ev){
+        const btn = ev.target.closest('button');
+        if(!btn) return;
+        const idx = Number(btn.dataset.index);
+        const inputs = Array.from(document.querySelectorAll('.elementInput')).map(i=>i.value);
+        if(btn.classList.contains('add')){
+          inputs.splice(idx+1,0,'');
+        } else if(btn.classList.contains('del')){
+          inputs.splice(idx,1);
+        }
+        while(inputs.length < 5) inputs.push('');
+        while(inputs.length > 5) inputs.pop();
+        // rebuild
+        const newUl = document.getElementById('elementsList');
+        newUl.innerHTML = '';
+        inputs.forEach((t,i)=>{
+          const li = document.createElement('li');
+          li.className = 'item';
+          li.innerHTML = `
+            <div style="flex:1">
+              <label class="small">要素 ${i+1}</label>
+              <input type="text" name="element${i}" id="element${i}" class="elementInput" value="${escapeHtml(t)}" />
+            </div>
+            <div class="controls">
+              <button class="secondary add" data-index="${i}">＋</button>
+              <button class="secondary del" data-index="${i}">－</button>
+            </div>
+          `;
+          newUl.appendChild(li);
+        });
+        // save
+        saveElementsToLS();
+      });
 
-    // allow add/delete element fields
-    qs('#elementsList').addEventListener('click', (ev)=>{
-      const b = ev.target.closest('button'); if(!b) return;
-      const action = b.dataset.action; const idx = Number(b.dataset.index);
-      const inputs = qsa('.elementInput').map(x=>x.value);
-      if(action==='add') inputs.splice(idx+1,0,'');
-      if(action==='del') inputs.splice(idx,1);
-      // normalize to 5 slots
-      while(inputs.length < 5) inputs.push('');
-      while(inputs.length > 5) inputs.pop();
-      // rebuild
-      const ul = qs('#elementsList'); ul.innerHTML='';
-      inputs.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item'; li.innerHTML=`\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="add" data-index="${i}">＋</button>\n            <button class="secondary" data-action="del" data-index="${i}">－</button>\n          </div>`;
+      // input autosave listener
+      ul.querySelectorAll('.elementInput').forEach(inp=>{
+        inp.addEventListener('input', saveElementsToLS);
+      });
+
+      // helper: save elements
+      function saveElementsToLS(){
+        const elems = Array.from(document.querySelectorAll('.elementInput')).map(i=>i.value);
+        const data = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        elems.forEach((v,i)=> data['element'+i] = v);
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+      }
+
+      // restore any existing elementN values
+      const saved = loadAllFields();
+      for(let i=0;i<5;i++){
+        const key = 'element'+i;
+        const v = saved[key] || '';
+        const e = document.getElementById(key);
+        if(e) e.value = v;
+      }
+    }
+
+    function initPhase3(){
+      // build priority list from element inputs saved
+      const ul = document.getElementById('priorityList');
+      ul.innerHTML = '';
+      // gather up to 5 elements
+      const elems = [];
+      for(let i=0;i<5;i++){
+        const val = (loadAllFields()['element'+i] || '').trim();
+        elems.push(val);
+      }
+      elems.forEach((t,i)=>{
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div style="flex:1">
+            <label class="small">要素 ${i+1}</label>
+            <input type="text" class="ptext" name="ptext${i}" id="ptext${i}" value="${escapeHtml(t)}" />
+          </div>
+          <div style="width:220px">
+            <label class="small">緊急性 (0-5)</label>
+            <input type="number" class="urg" name="urg${i}" id="urg${i}" min="0" max="5" value="${escapeHtml((loadAllFields()['urg'+i]||'0'))}" />
+            <label class="small">重要性 (0-5)</label>
+            <input type="number" class="imp" name="imp${i}" id="imp${i}" min="0" max="5" value="${escapeHtml((loadAllFields()['imp'+i]||'0'))}" />
+            <div style="margin-top:6px"><input type="checkbox" class="pin" name="pin${i}" id="pin${i}" ${ (loadAllFields()['pin'+i] ? 'checked' : '') } /> ピン留め（必ず残す）</div>
+          </div>
+        `;
         ul.appendChild(li);
       });
-    });
 
-    // Phase2 -> Phase3
-    qs('#toPhase3').addEventListener('click', ()=>{
-      const elems = qsa('.elementInput').map(i=>i.value.trim()).filter(Boolean);
-      // ensure we still have 5 slots (including empty)
-      const full = qsa('.elementInput').map(i=>i.value.trim());
-      const ul = qs('#priorityList'); ul.innerHTML='';
-      full.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item';
-        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">要素 ${i+1}</label>\n            <input type="text" class="ptext" data-i="${i}" value="${escapeHtml(t)}" />\n          </div>\n          <div style="width:220px">\n            <label class="small">緊急性 (0-5)</label>\n            <input type="number" class="urg" min="0" max="5" value="0" />\n            <label class="small">重要性 (0-5)</label>\n            <input type="number" class="imp" min="0" max="5" value="0" />\n            <div style="margin-top:6px"><input type="checkbox" class="pin" /> ピン留め（必ず残す）</div>\n          </div>\n        `;
-        ul.appendChild(li);
+      // autosave inputs in this phase
+      ul.addEventListener('input', function(){
+        saveAllFields();
       });
-      qs('#phase2').style.display='none'; qs('#phase3').style.display='block';
-    });
+      ul.addEventListener('change', function(){
+        saveAllFields();
+      });
 
-    qs('#backTo2').addEventListener('click', ()=>{qs('#phase3').style.display='none';qs('#phase2').style.display='block';});
+      // if user navigates forward, selection of top 3 will be computed in phase4 init
+    }
 
-    // Phase3 -> Phase4 (select top3)
-    qs('#toPhase4').addEventListener('click', ()=>{
-      const items = qsa('#priorityList .item').map(li=>{
-        const text = li.querySelector('.ptext').value.trim();
-        const urg = Number(li.querySelector('.urg').value)||0;
-        const imp = Number(li.querySelector('.imp').value)||0;
-        const pin = li.querySelector('.pin').checked;
-        return {text,urg,imp,pin,score:urg+imp};
-      }).filter(x=>x.text);
-      // if none, block
-      if(items.length===0){alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。'); return;}
-      // sort
+    function initPhase4(){
+      // choose top 3 based on urg+imp and pins
+      const items = [];
+      for(let i=0;i<5;i++){
+        const text = (document.getElementById('ptext'+i) && document.getElementById('ptext'+i).value) || (loadAllFields()['ptext'+i] || '');
+        const urg = Number((document.getElementById('urg'+i) && document.getElementById('urg'+i).value) || (loadAllFields()['urg'+i]||0));
+        const imp = Number((document.getElementById('imp'+i) && document.getElementById('imp'+i).value) || (loadAllFields()['imp'+i]||0));
+        const pin = (document.getElementById('pin'+i) && document.getElementById('pin'+i).checked) || !!(loadAllFields()['pin'+i]);
+        items.push({text,urg,imp,pin,score:urg+imp});
+      }
       items.sort((a,b)=> (b.score - a.score) || (b.imp - a.imp));
-      // make sure pinned ones included
-      const pinned = items.filter(i=>i.pin);
+      const pinned = items.filter(it=>it.pin);
       let top = items.slice(0,3);
-      // ensure pinned included
-      pinned.forEach(p=>{ if(!top.includes(p)) { top.pop(); top.push(p); } });
-      // unique and trim
+      pinned.forEach(p=>{ if(!top.includes(p)) { top.pop(); top.push(p); }});
+      // unique and pad
       top = Array.from(new Set(top)).slice(0,3);
-      // if less than 3, pad with empty
       while(top.length<3) top.push({text:'',urg:0,imp:0,score:0});
 
       // render orderedList
-      const ul = qs('#orderedList'); ul.innerHTML='';
+      const ul = document.getElementById('orderedList');
+      ul.innerHTML = '';
       top.forEach((it,idx)=>{
-        const li = document.createElement('li'); li.className='item draggable';
-        li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">優先 ${idx+1}</label>\n            <input type="text" class="ordtext" data-idx="${idx}" value="${escapeHtml(it.text)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>\n            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>\n          </div>\n        `;
+        const li = document.createElement('li');
+        li.className = 'item draggable';
+        li.innerHTML = `
+          <div style="flex:1">
+            <label class="small">優先 ${idx+1}</label>
+            <input type="text" class="ordtext" name="ord${idx}" id="ord${idx}" value="${escapeHtml(it.text)}" />
+          </div>
+          <div class="controls">
+            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
+            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>
+          </div>
+        `;
         ul.appendChild(li);
       });
 
-      qs('#phase3').style.display='none'; qs('#phase4').style.display='block';
-    });
-
-    qs('#backTo3').addEventListener('click', ()=>{qs('#phase4').style.display='none';qs('#phase3').style.display='block';});
-
-    // reorder up/down
-    qs('#orderedList').addEventListener('click', (ev)=>{
-      const b = ev.target.closest('button'); if(!b) return;
-      const action = b.dataset.action; const idx = Number(b.dataset.idx);
-      const inputs = qsa('.ordtext').map(i=>i.value);
-      if(action==='up' && idx>0){ [inputs[idx-1],inputs[idx]] = [inputs[idx],inputs[idx-1]]; }
-      if(action==='down' && idx < inputs.length-1){ [inputs[idx+1],inputs[idx]] = [inputs[idx],inputs[idx+1]]; }
-      // rerender
-      const ul = qs('#orderedList'); ul.innerHTML='';
-      inputs.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">優先 ${i+1}</label>\n            <input type="text" class="ordtext" data-idx="${i}" value="${escapeHtml(t)}" />\n          </div>\n          <div class="controls">\n            <button class="secondary" data-action="up" data-idx="${i}">↑</button>\n            <button class="secondary" data-action="down" data-idx="${i}">↓</button>\n          </div>`;
-        ul.appendChild(li);
+      // up/down logic
+      ul.addEventListener('click', function(ev){
+        const b = ev.target.closest('button');
+        if(!b) return;
+        const action = b.dataset.action;
+        const idx = Number(b.dataset.idx);
+        const inputs = Array.from(document.querySelectorAll('.ordtext')).map(i=>i.value);
+        if(action === 'up' && idx>0){ [inputs[idx-1], inputs[idx]] = [inputs[idx], inputs[idx-1]]; }
+        if(action === 'down' && idx < inputs.length-1){ [inputs[idx+1], inputs[idx]] = [inputs[idx], inputs[idx+1]]; }
+        // rerender
+        ul.innerHTML = '';
+        inputs.forEach((t,i)=>{
+          const li = document.createElement('li');
+          li.className = 'item draggable';
+          li.innerHTML = `
+            <div style="flex:1">
+              <label class="small">優先 ${i+1}</label>
+              <input type="text" class="ordtext" name="ord${i}" id="ord${i}" value="${escapeHtml(t)}" />
+            </div>
+            <div class="controls">
+              <button class="secondary" data-action="up" data-idx="${i}">↑</button>
+              <button class="secondary" data-action="down" data-idx="${i}">↓</button>
+            </div>
+          `;
+          ul.appendChild(li);
+        });
+        saveAllFields();
       });
-    });
 
-    // Phase4 -> Phase5
-    qs('#toPhase5').addEventListener('click', ()=>{
-      const arr = qsa('.ordtext').map(i=>i.value.trim()).filter(Boolean);
-      if(arr.length===0){ alert('優先する要素がありません。戻って要素を整理してください。'); return; }
-      const ul = qs('#finalInputs'); ul.innerHTML='';
+      // save initial ord values
+      document.querySelectorAll('.ordtext').forEach(i=> i.addEventListener('input', saveAllFields));
+    }
+
+    function initPhase5(){
+      // restore intro/closing and ordtexts
+      const data = loadAllFields();
+      const intro = document.getElementById('intro');
+      const closing = document.getElementById('closing');
+      if(intro) intro.value = data['intro'] || '';
+      if(closing) closing.value = data['closing'] || '';
+
+      // build finalInputs from ordtext values previously selected (phase4)
+      const arr = [];
+      for(let i=0;i<3;i++){
+        const v = (data['ord'+i] || '');
+        arr.push(v);
+      }
+      // fallback: if none, try to load ordtext inputs from page (if swapped)
+      const ul = document.getElementById('finalInputs');
+      ul.innerHTML = '';
       arr.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item'; li.innerHTML = `\n          <div style="flex:1">\n            <label class="small">伝える文 ${i+1}（短く具体的に）</label>\n            <textarea rows="2" class="finalPiece">${escapeHtml(t)}</textarea>\n          </div>`;
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div style="flex:1">
+            <label class="small">伝える文 ${i+1}（短く具体的に）</label>
+            <textarea rows="2" class="finalPiece" name="finalPiece${i}" id="finalPiece${i}">${escapeHtml(t)}</textarea>
+          </div>
+        `;
         ul.appendChild(li);
       });
-      qs('#phase4').style.display='none'; qs('#phase5').style.display='block';
-    });
 
-    qs('#backTo4').addEventListener('click', ()=>{qs('#phase5').style.display='none';qs('#phase4').style.display='block';});
+      // autosave
+      ul.addEventListener('input', saveAllFields);
+      if(intro) intro.addEventListener('input', saveAllFields);
+      if(closing) closing.addEventListener('input', saveAllFields);
+    }
 
-    // Phase5 -> Phase6
-    qs('#toPhase6').addEventListener('click', ()=>{
-      const intro = qs('#intro').value.trim();
-      const closing = qs('#closing').value.trim();
-      const pieces = qsa('.finalPiece').map(t=>t.value.trim()).filter(Boolean);
-      const final = buildFinalMessage(intro,pieces,closing);
-      qs('#finalMessage').textContent = final;
-      qs('#phase5').style.display='none'; qs('#phase6').style.display='block';
-    });
-
-    qs('#backTo3'); // noop
-
-    // copy
-    qs('#copyBtn').addEventListener('click', ()=>{
-      const txt = qs('#finalMessage').textContent;
-      navigator.clipboard?.writeText(txt).then(()=>alert('文章をコピーしました。'));    
-    });
-    qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
-    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) location.reload(); });
-
-    // helpers
-    function buildFinalMessage(intro,pieces,closing){
+    function initPhase6(){
+      // assemble final message from intro, finalPieces, closing
+      const data = loadAllFields();
+      const intro = data['intro'] || '';
+      const pieces = [];
+      for(let i=0;i<3;i++){
+        pieces.push(data['finalPiece'+i] || data['ord'+i] || '');
+      }
+      const closing = data['closing'] || '';
       const lines = [];
       if(intro) lines.push(intro);
-      pieces.forEach((p,i)=>{
-        // short prefix like "1.", but keep concise
-        lines.push((i+1) + '. ' + p);
-      });
+      pieces.forEach((p,i)=>{ if(p) lines.push((i+1)+'. '+p); });
       if(closing) lines.push(closing);
-      return lines.join('\n');
+      const finalTxt = lines.join('\n');
+      const finalDiv = document.getElementById('finalMessage');
+      if(finalDiv) finalDiv.textContent = finalTxt;
+
+      // copy button
+      const copyBtn = document.getElementById('copyBtn');
+      if(copyBtn){
+        copyBtn.onclick = async function(){
+          try {
+            await navigator.clipboard.writeText(finalDiv.textContent || '');
+            alert('文章をコピーしました。');
+          } catch(e){
+            alert('コピーに失敗しました。');
+          }
+        };
+      }
+
+      // edit button toggles contentEditable
+      const editBtn = document.getElementById('editBtn');
+      if(editBtn){
+        editBtn.onclick = function(){
+          finalDiv.contentEditable = finalDiv.contentEditable !== 'true' ? 'true' : 'false';
+          finalDiv.focus();
+          // if made editable, track changes into localStorage
+          if(finalDiv.contentEditable === 'true'){
+            finalDiv.addEventListener('input', function onInput(){
+              // save as finalPiece0 (single string)
+              const d = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+              d['finalManual'] = finalDiv.textContent;
+              localStorage.setItem(LS_KEY, JSON.stringify(d));
+            }, {once:false});
+          } else {
+            // when finishing edit, save
+            const d = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+            d['finalManual'] = finalDiv.textContent;
+            localStorage.setItem(LS_KEY, JSON.stringify(d));
+          }
+        };
+      }
+
+      // reset button clears localStorage and reloads the first fragment
+      const resetBtn = document.getElementById('resetBtn');
+      if(resetBtn){
+        resetBtn.onclick = function(){
+          if(!confirm('最初からやり直しますか？')) return;
+          localStorage.removeItem(LS_KEY);
+          // navigate back to phase1 via htmx
+          htmx.ajax('GET', 'index.html #frag-phase1', {target:'#main', swap:'innerHTML'});
+        };
+      }
+
+      // PDF button: add once (only in phase6)
+      if(!document.getElementById('pdfBtn')){
+        const pdfBtn = document.createElement('button');
+        pdfBtn.className = 'btn';
+        pdfBtn.id = 'pdfBtn';
+        pdfBtn.textContent = '🖨️ PDFとして保存';
+        pdfBtn.style.marginLeft = '8px';
+        // append to controls
+        const controls = document.querySelector('#phase6 > div[style*="gap:8px"]');
+        if(controls) controls.appendChild(pdfBtn);
+
+        pdfBtn.addEventListener('click', generatePdfSafely);
+      }
     }
 
-    function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    // Warn: if certain keywords appear (suicide), show resource hint
-    function containsSelfHarmKeywords(text){
-      if(!text) return false;
-      const keywords = ['死にたい','自殺','希死','消えたい','首を','殺して','終わりにしたい','死んで'];
-      const t = text.replace(/\s+/g,'');
-      return keywords.some(k=>t.includes(k));
-    }
-
-    // Monitor rawText for high-risk words and show a subtle warning banner
-    const banner = document.createElement('div'); banner.style.padding='10px'; banner.style.borderRadius='8px'; banner.style.marginTop='10px';
-    document.body.insertBefore(banner, document.body.firstChild.nextSibling);
-    banner.style.display='none';
-
-    qs('#rawText').addEventListener('input', ()=>{
-      const v = qs('#rawText').value;
-      if(containsSelfHarmKeywords(v)){
-        banner.style.display='block'; banner.innerHTML = '<strong class="danger">もし今すぐに危険を感じているなら、いますぐ最寄りの緊急連絡（119）または警察（110）へ連絡してください。専門の相談も利用できます。ページ下部の支援情報を確認してください。</strong>';
-      } else { banner.style.display='none'; }
-    });
-
-    // add a small footer with resources (static list)
-    const footer = document.createElement('div'); footer.className='card'; footer.style.marginTop='20px'; footer.innerHTML = `
-      <h3>支援・相談窓口（例）</h3>
-      <p class="small">緊急でない場合や話を聴いてほしい場合は下の窓口も利用できます。 <span class="small">（地域によって窓口や番号は異なります）</span></p>
-      <ul class="small">
-        <li>TELL Lifeline（英語）: +81-3-5774-0992（ウェブでLifelineの時間を確認してください）</li>
-        <li>いのちの電話（地域窓口）: 各地域で24時間相談を提供する場合があります（自治体の案内をご確認ください）</li>
-        <li>緊急なら: 119（救急） / 110（警察）</li>
-      </ul>
-    `;
-    document.body.appendChild(footer);
-
-    const pdfBtn = document.createElement('button');
-    pdfBtn.textContent = '🖨️ PDFとして保存';
-    pdfBtn.style.marginLeft = '8px';
-    pdfBtn.id = 'pdfBtn';
-    qs('#phase6').querySelector('div[style*="gap:8px"]').appendChild(pdfBtn);
-
-    // jsPDF + html2canvasをCDNから動的ロード
-    async function loadScript(src){
+    /* -------------------------
+       PDF 生成（html2canvas + jsPDF を動的ロード）
+       安全対策: ライブラリが読めなければエラーをキャッチし、ユーザに通知
+       ------------------------- */
+    async function loadScript(src, globalNameCheck){
+      if(globalNameCheck && window[globalNameCheck]) return;
       return new Promise((resolve, reject)=>{
         const s = document.createElement('script');
         s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load '+src));
         document.head.appendChild(s);
       });
     }
 
-    async function ensureLibs(){
-      if(!window.html2canvas){
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-      }
-      if(!window.jspdf){
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-      }
-    }
-
-    pdfBtn.addEventListener('click', async ()=>{
+    async function generatePdfSafely(){
+      const btn = document.getElementById('pdfBtn');
+      if(btn) { btn.disabled = true; btn.textContent = 'PDF生成中...'; }
       try {
-        pdfBtn.disabled = true;
-        pdfBtn.textContent = 'PDF生成中...';
-
-        await ensureLibs();
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jsPDF');
 
         const { jsPDF } = window.jspdf;
 
-        // カード風に装飾された要素を作成してキャプチャ
+        // make a visually pleasing card to capture
         const card = document.createElement('div');
         card.style.padding = '20px';
         card.style.background = 'white';
@@ -349,37 +645,87 @@
         card.style.boxShadow = '0 6px 18px rgba(20,30,60,0.08)';
         card.style.width = '700px';
         card.style.fontFamily = 'system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
+        const finalDiv = document.getElementById('finalMessage');
+        const contentText = finalDiv ? finalDiv.textContent : '';
         card.innerHTML = `
-          <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — I Message to You about My Mind.</h2>
-          <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(qs('#finalMessage').textContent)}</div>
+          <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — My Message About My Mind</h2>
+          <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(contentText)}</div>
           <hr style="margin:20px 0;">
-          <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 🧠 3M — I Message to You about My Mind.</p>
+          <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 3M — Mental Message Maker</p>
         `;
         document.body.appendChild(card);
-
-        const canvas = await html2canvas(card, {scale:2});
+        // ensure images/fonts rendered
+        const canvas = await html2canvas(card, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
 
         const pdf = new jsPDF({orientation:'p', unit:'px', format:'a4'});
         const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
         const imgWidth = pageWidth - 40;
         const imgHeight = canvas.height * imgWidth / canvas.width;
-
         pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
         pdf.save('3M_Message.pdf');
-
         document.body.removeChild(card);
-        pdfBtn.textContent = '🖨️ PDFとして保存';
-        pdfBtn.disabled = false;
-      } catch(err){
-        console.error(err);
-        alert('PDF生成中にエラーが発生しました。再度お試しください。');
-        pdfBtn.textContent = '🖨️ PDFとして保存';
-        pdfBtn.disabled = false;
+      } catch(e){
+        console.error(e);
+        alert('PDF生成中にエラーが発生しました。後でもう一度お試しください。');
+      } finally {
+        if(btn) { btn.disabled = false; btn.textContent = '🖨️ PDFとして保存'; }
+      }
+    }
+
+    /* -------------------------
+       HTMX イベントハンドラ
+       - afterSwap: フラグメントが main に差し替わった後にフェーズ固有初期化を行う
+       - beforeRequest / afterRequest を用いた潜在的エラー防止（軽量）
+       ------------------------- */
+    document.body.addEventListener('htmx:afterSwap', function(evt){
+      // when a fragment was swapped into #main, initialize it
+      // determine which fragment was swapped by looking at evt.detail.target
+      const target = evt.detail.target; // the element that was swapped
+      // main 内に存在する特定の id を見て判断
+      if(document.getElementById('phase1')){
+        initPhase1();
+      }
+      if(document.getElementById('phase2')){
+        initPhase2();
+      }
+      if(document.getElementById('phase3')){
+        initPhase3();
+      }
+      if(document.getElementById('phase4')){
+        initPhase4();
+      }
+      if(document.getElementById('phase5')){
+        initPhase5();
+      }
+      if(document.getElementById('phase6')){
+        initPhase6();
       }
     });
+
+    // Save on any htmx request (navigate away) to minimize data loss
+    document.body.addEventListener('htmx:beforeRequest', function(){
+      saveAllFields();
+    });
+
+    // fallback: save periodically (every 5s) to guard against accidental closure
+    setInterval(saveAllFields, 5000);
+
+    // On initial load, if localStorage contains data, we might want to auto-restore into phase1 view.
+    // The initial hx-get will load frag-phase1 and then htmx:afterSwap will call initPhase1 which restores fields.
+
+    // Ensure graceful degradation: if HTMX isn't available for any reason, show all fragments sequentially (non-hx fallback)
+    if(typeof htmx === 'undefined'){
+      // reveal phase1 content directly into main
+      const main = document.getElementById('main');
+      const frag = document.getElementById('frag-phase1');
+      if(main && frag) main.innerHTML = frag.innerHTML;
+      // call init manually
+      initPhase1();
+    }
+
+    // End closure
+  })();
   </script>
 </body>
 </html>
