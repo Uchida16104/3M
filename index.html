@@ -305,6 +305,81 @@
       </ul>
     `;
     document.body.appendChild(footer);
+
+    const pdfBtn = document.createElement('button');
+    pdfBtn.textContent = '🖨️ PDFとして保存';
+    pdfBtn.style.marginLeft = '8px';
+    pdfBtn.id = 'pdfBtn';
+    qs('#phase6').querySelector('div[style*="gap:8px"]').appendChild(pdfBtn);
+
+    // jsPDF + html2canvasをCDNから動的ロード
+    async function loadScript(src){
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function ensureLibs(){
+      if(!window.html2canvas){
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      }
+      if(!window.jspdf){
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      }
+    }
+
+    pdfBtn.addEventListener('click', async ()=>{
+      try {
+        pdfBtn.disabled = true;
+        pdfBtn.textContent = 'PDF生成中...';
+
+        await ensureLibs();
+
+        const { jsPDF } = window.jspdf;
+
+        // カード風に装飾された要素を作成してキャプチャ
+        const card = document.createElement('div');
+        card.style.padding = '20px';
+        card.style.background = 'white';
+        card.style.borderRadius = '12px';
+        card.style.boxShadow = '0 6px 18px rgba(20,30,60,0.08)';
+        card.style.width = '700px';
+        card.style.fontFamily = 'system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
+        card.innerHTML = `
+          <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — My Message About My Mind</h2>
+          <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(qs('#finalMessage').textContent)}</div>
+          <hr style="margin:20px 0;">
+          <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 3M — Mental Message Maker</p>
+        `;
+        document.body.appendChild(card);
+
+        const canvas = await html2canvas(card, {scale:2});
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdf = new jsPDF({orientation:'p', unit:'px', format:'a4'});
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const imgWidth = pageWidth - 40;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+        pdf.save('3M_Message.pdf');
+
+        document.body.removeChild(card);
+        pdfBtn.textContent = '🖨️ PDFとして保存';
+        pdfBtn.disabled = false;
+      } catch(err){
+        console.error(err);
+        alert('PDF生成中にエラーが発生しました。再度お試しください。');
+        pdfBtn.textContent = '🖨️ PDFとして保存';
+        pdfBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>
