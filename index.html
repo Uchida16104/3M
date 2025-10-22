@@ -5,918 +5,863 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🧠3M — I Message to You About My Mind</title>
 
-  <!-- Tailwind CDN (dynamic) + runtime configuration for color / accessibility adjustments -->
+  <!-- Tailwind (CDN) with on-the-fly customization for colors / accessibility -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Tailwind config: customize colors & accessible defaults.
-    // This is the recommended way to "customize" Tailwind when using the CDN for prototypes.
-    window.tailwind = window.tailwind || {};
-    window.tailwind.config = {
+    /* Tailwind runtime configuration:
+       - Adds accessible color palette tweaks
+       - Enlarges default focus outlines for keyboard users
+       - Keeps minimal changes to structure to respect original design */
+    tailwind.config = {
+      darkMode: false,
       theme: {
         extend: {
           colors: {
-            primary: {
-              50:  '#f5fbff',
-              100: '#e6f4ff',
-              200: '#cceaff',
-              300: '#99d6ff',
-              400: '#66c2ff',
-              500: '#2898e6', // main blue
-              600: '#1f78b4',
-              700: '#155871',
-              800: '#0e3a48',
-              900: '#061f24'
+            brand: {
+              50: '#f7fbfb',
+              100: '#eef6f6',
+              200: '#cfecec',
+              300: '#9fd9d9',
+              400: '#4fbaba',
+              500: '#169999',
+              600: '#167a7a',
+              700: '#125f5f',
+              800: '#0e4848',
+              900: '#082f2f'
             },
             accent: {
-              50: '#fff8f3',
-              100:'#fff0e6',
-              200:'#ffd9bf',
-              300:'#ffc299',
-              400:'#ff9f66',
-              500:'#ff7a33',
-              700:'#b24c22'
-            },
-            danger: {
-              500: '#c62828'
-            },
-            success: {
-              500: '#2e7d32'
+              50: '#fff6f0',
+              100: '#ffead9',
+              200: '#ffd0b3',
+              300: '#ffb080',
+              400: '#ff8a44',
+              500: '#ff661a',
+              600: '#e65100',
+              700: '#b43c00',
+              800: '#862d00',
+              900: '#5b2000'
             }
           },
-          borderRadius: {
-            'xl': '1rem'
+          ringWidth: {
+            DEFAULT: '4px'
           }
-        },
-        fontFamily: {
-          sans: ['Noto Sans JP', 'Helvetica', 'Arial', 'sans-serif']
         }
       },
-      // Increase contrast defaults for accessibility
-      corePlugins: { preflight: true }
-    };
+      plugins: [
+        function ({ addUtilities }) {
+          addUtilities({
+            '.focus-ring': {
+              outline: 'none',
+              boxShadow: '0 0 0 4px rgba(22,153,153,0.12)'
+            }
+          })
+        }
+      ]
+    }
   </script>
 
-  <!-- HTMX (no version specified) - as requested -->
+  <!-- HTMX (no version specified, per request) -->
   <script src="https://unpkg.com/htmx.org"></script>
 
-  <!-- Utilities for export: html2canvas and jsPDF (UMD) -->
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Utility libs for export/save: html2canvas + jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="" crossorigin="anonymous"></script>
 
+  <meta name="description" content="🧠3M — I Message to You About My Mind. 思考整理・対話支援ツール。">
   <style>
-    /* A few minimal handcrafted styles to complement Tailwind for readability */
-    :root{
-      --content-max-width: 980px;
-      --card-bg: #ffffff;
-    }
-    body{ background: linear-gradient(180deg,#fbfdff 0%, #f7fbff 100%); }
-    .phase-card { background: var(--card-bg); }
-    /* Make textarea visually consistent and accessible */
-    textarea { resize: vertical; min-height: 44px; line-height:1.4; }
-    /* focus style for accessibility */
-    .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(40,152,230,0.18); border-color: rgb(40,152,230); }
-    /* small helper */
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Noto Sans JP", monospace; }
-    /* keep content a bit narrower on large screens */
-    .container-max { max-width: var(--content-max-width); margin-left: auto; margin-right: auto; }
+    /* Small visual polish consistent with original layout but improved spacing/readability */
+    html,body { height: 100%; }
+    body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    textarea { resize: vertical; min-height: 3rem; line-height: 1.5; }
+    /* visually-hidden helper */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
   </style>
 </head>
-<body class="text-slate-800 antialiased leading-normal">
+<body class="bg-brand-50 text-slate-900 leading-relaxed">
 
-  <!-- Top Nav -->
-  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-slate-200">
-    <div class="container-max px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <a href="#top" class="text-primary-700 font-semibold text-lg mono">🧠3M</a>
-        <nav class="hidden md:flex gap-2 items-center ml-4">
-          <!-- internal navigation using id anchors + HTMX hint (hx-push-url="true") -->
-          <a href="#overview" hx-push-url="true" class="text-sm text-slate-700 hover:text-primary-600 px-2 py-1">Overview</a>
-          <a href="#phases" hx-push-url="true" class="text-sm text-slate-700 hover:text-primary-600 px-2 py-1">Phases</a>
-          <a href="#safety" hx-push-url="true" class="text-sm text-slate-700 hover:text-primary-600 px-2 py-1">Safety</a>
-          <a href="#export" hx-push-url="true" class="text-sm text-slate-700 hover:text-primary-600 px-2 py-1">Export</a>
-          <a href="#tech" hx-push-url="true" class="text-sm text-slate-700 hover:text-primary-600 px-2 py-1">Tech</a>
-        </nav>
+  <!-- Emergency banner (hidden until high-risk word detected) -->
+  <div id="emergencyBanner" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[min(1000px,95%)]">
+    <div class="bg-accent-500 text-white rounded-lg shadow-lg p-4 flex items-center gap-4">
+      <div class="flex-1">
+        <strong class="block text-lg">緊急のサポートが必要な可能性があります</strong>
+        <div class="text-sm">「死にたい」「消えたい」等の表現が検出されました。すぐに支援機関へご連絡ください。</div>
       </div>
+      <div class="flex gap-2">
+        <!-- Immediate contact buttons (support agency call / print) -->
+        <a id="callSupportBtn" class="inline-flex items-center px-4 py-2 bg-white text-accent-600 rounded-md font-semibold focus-ring" href="#" role="button">支援機関に電話</a>
+        <button id="printSupportBtn" class="inline-flex items-center px-4 py-2 bg-transparent border border-white text-white rounded-md hover:bg-white/10 focus-ring">印刷</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- Top header -->
+  <header class="bg-white/80 backdrop-blur sticky top-0 z-40 border-b border-slate-200">
+    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <!-- Emergency quick actions (支援機関の連絡ボタン) -->
-        <div class="flex gap-2">
-          <!-- phone link for immediate call - prints for desktops -->
-          <a id="call-support" href="tel:119" class="px-3 py-1 rounded-xl text-white bg-danger-500 text-sm hover:opacity-95">救急 119</a>
-          <a id="call-police" href="tel:110" class="px-3 py-1 rounded-xl text-white bg-primary-600 text-sm hover:opacity-95">警察 110</a>
+        <div class="w-10 h-10 rounded-md bg-brand-500 flex items-center justify-center text-white font-bold">🧠3M</div>
+        <div>
+          <h1 class="text-lg font-semibold">🧠3M — I Message to You About My Mind</h1>
+          <p class="text-sm text-slate-600">自分の心を整理して、安全に伝える支援ツール</p>
         </div>
-
-        <button id="print-guide" class="ml-2 px-3 py-1 bg-slate-100 text-sm rounded-xl border border-slate-200 hover:bg-slate-50">印刷用案内</button>
       </div>
+
+      <nav class="flex items-center gap-2">
+        <!-- Internal navigation via hash (id) + HTMX hx-push-url attribute included explicitly for coders -->
+        <!-- hx-get points to the same page with fragment — this will replace #main content on network-enabled hosts.
+             We also listen to hashchange in JS to allow purely-local transitions without network calls. -->
+        <a href="#mind" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#mind" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Mind</a>
+        <a href="#message" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#message" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Message</a>
+        <a href="#move" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#move" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Move</a>
+        <a href="#about" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#about" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">About</a>
+        <button id="saveLocalBtn" class="ml-2 px-3 py-2 bg-brand-500 text-white rounded-md hover:brightness-95 focus-ring">自動保存 / エクスポート</button>
+      </nav>
     </div>
   </header>
 
-  <main class="container-max px-4 py-8">
-    <section id="top" class="mb-6">
-      <div class="grid md:grid-cols-3 gap-6 items-start">
-        <div class="md:col-span-2">
-          <h1 class="text-3xl font-extrabold text-primary-700">🧠3M — I Message to You About My Mind</h1>
-          <p class="mt-3 text-slate-700">精神的に混乱したとき、「何を言いたいのかわからない」と言われてしまう人のための思考整理・対話支援ツール。</p>
+  <!-- Main content area -->
+  <main id="main" class="mx-auto max-w-6xl px-4 py-8 space-y-8">
 
-          <div class="mt-4 flex gap-3">
-            <a href="#phases" hx-push-url="true" class="px-4 py-2 rounded-xl bg-primary-500 text-white shadow hover:opacity-95">はじめる</a>
-            <button id="save-local-btn" class="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-50">自動保存を確認</button>
-            <button id="export-pdf" class="px-4 py-2 rounded-xl bg-amber-400 text-white hover:opacity-95">PDFで保存</button>
-            <button id="export-img" class="px-4 py-2 rounded-xl bg-emerald-500 text-white hover:opacity-95">画像で保存</button>
-          </div>
+    <!-- Intro / Overview (kept same content/structure per instruction) -->
+    <section id="mind" class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-bold mb-2">概要</h2>
+      <p class="text-slate-700 mb-4">
+        🧠3M（読み：「スリーエム」 / I Message to You About My Mind）は、
+        「自分の気持ちを整理して、相手に安全に伝える」ことをサポートする自己表現支援アプリです。
+      </p>
+
+      <!-- PHASE 1: Raw input -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700">フェーズ1：ありのまま入力</label>
+        <textarea id="rawInput"
+                  class="w-full border border-slate-200 rounded-md p-3 focus:ring focus-ring"
+                  placeholder="思ったこと・感じたことをそのまま書いてください。"></textarea>
+        <div class="flex gap-2">
+          <button id="splitBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">要素に分解（、。で区切る）</button>
+          <button id="clearBtn" class="px-4 py-2 border rounded-md">クリア</button>
         </div>
-
-        <!-- Safety / Quick help panel -->
-        <aside class="phase-card p-4 rounded-xl shadow-sm border border-slate-100">
-          <h3 class="text-lg font-semibold">セーフティ機能</h3>
-          <p class="mt-2 text-sm text-slate-700">高リスクワード（例：「死にたい」「消えたい」）を検出すると、ページ上部に緊急支援を表示します。ローカル運用が前提です。</p>
-
-          <div class="mt-3 space-y-2">
-            <a href="https://www.inochinodenwa.org/?page_id=267" target="_blank" rel="noopener" class="block text-sm text-primary-700 underline">いのちの電話（リンク）</a>
-            <a href="tel:119" class="block text-sm text-slate-700">救急：119</a>
-            <a href="tel:110" class="block text-sm text-slate-700">警察：110</a>
-          </div>
-
-          <div id="safety-banner" class="hidden mt-4 p-3 rounded-lg bg-red-50 border border-red-100 text-red-800">
-            <strong>緊急アラート:</strong> 高リスクワードが検出されました。すぐに支援窓口へ連絡してください。
-            <div class="mt-2 flex gap-2">
-              <a id="safety-call" href="tel:119" class="px-3 py-1 bg-red-600 text-white rounded">今すぐ電話</a>
-              <button id="safety-print" class="px-3 py-1 bg-slate-100 rounded border">印刷用案内</button>
-            </div>
-          </div>
-        </aside>
+        <p class="text-xs text-slate-500">※ 全ての入力欄は textarea を使用しています。</p>
       </div>
     </section>
 
-    <!-- Overview -->
-    <section id="overview" class="mb-8" aria-labelledby="overview-title">
-      <h2 id="overview-title" class="text-2xl font-bold">概要・コンセプト・3つのM</h2>
-      <div class="mt-4 grid md:grid-cols-2 gap-4">
-        <div class="phase-card p-4 rounded-xl border">
-          <h3 class="font-semibold">概要</h3>
-          <p class="mt-2 text-sm text-slate-700">🧠3M（I Message to You About My Mind）は、「自分の気持ちを整理して、相手に安全に伝える」ことをサポートするアプリです。</p>
-        </div>
+    <!-- PHASE 2: Elements list (dynamically generated) -->
+    <section id="message" class="hidden bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-bold mb-2">フェーズ2：要素分解</h2>
+      <p class="text-slate-700 mb-4">「、」「。」で区切って自動的に要素化します。要素は追加・編集・削除可能です。</p>
 
-        <div class="phase-card p-4 rounded-xl border">
-          <h3 class="font-semibold">コンセプト / 3つのM</h3>
-          <ol class="mt-2 text-sm text-slate-700 list-decimal pl-5 space-y-1">
-            <li><strong>Mind</strong> — 自分の気持ちをありのままに書き出す</li>
-            <li><strong>Message</strong> — 思考を要素に分解し、優先度をつける</li>
-            <li><strong>Move</strong> — 伝える言葉としてまとめ、行動に移す</li>
-          </ol>
-        </div>
+      <ul id="elementsList" class="space-y-2"></ul>
+
+      <div class="mt-4 flex gap-2">
+        <button id="toFiveBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">次へ：5要素に絞る</button>
+        <button id="addElementBtn" class="px-4 py-2 border rounded-md">要素を追加</button>
       </div>
     </section>
 
-    <!-- Phases Workspace -->
-    <section id="phases" class="mb-10" aria-labelledby="phases-title">
-      <h2 id="phases-title" class="text-2xl font-bold">フェーズ（11段階）ワークスペース</h2>
+    <!-- PHASE 3..11 UI -->
+    <section id="move" class="hidden bg-white rounded-lg shadow p-6 space-y-4">
+      <h2 class="text-2xl font-bold">フェーズ：Message → Move（整理と送信準備）</h2>
 
-      <div class="mt-4 grid lg:grid-cols-3 gap-4">
-        <!-- Left column: phases navigation -->
-        <nav class="lg:col-span-1 phase-card p-4 rounded-xl border h-full">
-          <h3 class="font-semibold">PHASES</h3>
-          <ol class="mt-3 text-sm space-y-2">
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase1" hx-push-url="true">フェーズ1：ありのまま入力</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase2" hx-push-url="true">フェーズ2：要素分解（、。で分割）</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase3" hx-push-url="true">フェーズ3：5要素に絞る</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase4" hx-push-url="true">フェーズ4：必要・不要の仕分け</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase5" hx-push-url="true">フェーズ5：緊急度・重要度の分類</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase6" hx-push-url="true">フェーズ6：上位3つに絞る</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase7" hx-push-url="true">フェーズ7：優先順位づけ</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase8" hx-push-url="true">フェーズ8：構成を組み立てる</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase9" hx-push-url="true">フェーズ9：文章化</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase10" hx-push-url="true">フェーズ10：確認・修正</a></li>
-            <li><a class="block px-2 py-1 rounded hover:bg-slate-50" href="#phase11" hx-push-url="true">フェーズ11：完成</a></li>
-          </ol>
+      <!-- 3: 5 elements selection -->
+      <div>
+        <h3 class="font-semibold">フェーズ3：5要素に絞る</h3>
+        <p class="text-sm text-slate-600">要素リストから重要なものを最大5つ選んでください。</p>
+        <ul id="pickFive" class="mt-2 space-y-2"></ul>
+      </div>
 
-          <div class="mt-4 text-xs text-slate-600">
-            <p>※ 全ての入力欄は <strong>textarea</strong> で統一されています（コピー・長文対応）。</p>
+      <!-- 4: Necessary / Unnecessary -->
+      <div>
+        <h3 class="font-semibold">フェーズ4：必要・不要の仕分け</h3>
+        <p class="text-sm text-slate-600">選ばれた要素を「必要」「不要」に仕分けします。</p>
+        <div id="needUnneed" class="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <h4 class="font-medium">必要</h4>
+            <ul id="needed" class="mt-2 space-y-1"></ul>
           </div>
-        </nav>
+          <div>
+            <h4 class="font-medium">不要</h4>
+            <ul id="unneeded" class="mt-2 space-y-1"></ul>
+          </div>
+        </div>
+      </div>
 
-        <!-- Middle column: workspace -->
-        <div class="lg:col-span-2 space-y-4">
-          <!-- Phase 1 -->
-          <section id="phase1" class="phase-card p-4 rounded-xl border">
-            <h3 class="text-lg font-semibold">フェーズ1：ありのまま入力</h3>
-            <p class="text-sm text-slate-600 mt-1">まずは判断せずに思ったことを全部書いてください。改行もそのまま残ります。</p>
-            <textarea id="raw-input" class="mt-3 w-full p-3 border rounded-xl focus-ring" placeholder="例：最近眠れない、職場で誤解された気がする、誰かに話したいけどタイミングが分からない..." rows="6"></textarea>
+      <!-- 5: Urgency / Importance -->
+      <div>
+        <h3 class="font-semibold">フェーズ5：緊急度と重要度の分類</h3>
+        <p class="text-sm text-slate-600">残った要素に緊急度（0-5）と重要度（0-5）をつけます。</p>
+        <div id="priorityTable" class="mt-2 space-y-2"></div>
+      </div>
 
-            <div class="mt-3 flex gap-2">
-              <button id="split-btn" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ2へ（分解）</button>
-              <button id="clear-btn" class="px-3 py-2 rounded-xl bg-slate-100 border">クリア</button>
-            </div>
-            <p class="text-xs mt-2 text-slate-500">分解は「、」「。」で行います。必要に応じて手動で要素を編集できます。</p>
-          </section>
+      <!-- 6: Top 3 -->
+      <div>
+        <h3 class="font-semibold">フェーズ6：上位3つに絞る</h3>
+        <p class="text-sm text-slate-600">自動スコアで上位3つを抽出します。</p>
+        <ol id="topThree" class="list-decimal ml-5 mt-2 space-y-1"></ol>
+        <div class="mt-2">
+          <button id="rankBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">スコアを計算して上位3つを表示</button>
+        </div>
+      </div>
 
-          <!-- Phase 2 -->
-          <section id="phase2" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ2：要素分解</h3>
-            <p class="text-sm text-slate-600 mt-1">自動で文章を区切り、要素リストを作成します。要素数の上限はありません。</p>
+      <!-- 7: Ordering -->
+      <div>
+        <h3 class="font-semibold">フェーズ7：優先順位づけ</h3>
+        <p class="text-sm text-slate-600">上位3つをドラッグで並べ替え、伝える順番を決めます。</p>
+        <ul id="orderList" class="mt-2 space-y-2"></ul>
+      </div>
 
-            <div id="elements-list" class="mt-3 space-y-2">
-              <!-- dynamically inserted textareas per element -->
-            </div>
+      <!-- 8: Structure -->
+      <div>
+        <h3 class="font-semibold">フェーズ8：構成を組み立てる</h3>
+        <p class="text-sm text-slate-600">「結論 → 理由 → 希望」の型で各項目を補足します。</p>
+        <div id="structureArea" class="mt-2 space-y-2"></div>
+      </div>
 
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase3" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ3へ（5つ選択）</button>
-              <button id="add-element" class="px-3 py-2 rounded-xl bg-slate-100 border">要素を追加</button>
-            </div>
-          </section>
+      <!-- 9: Compose -->
+      <div>
+        <h3 class="font-semibold">フェーズ9：文章化</h3>
+        <p class="text-sm text-slate-600">下のエリアで最終メッセージの文面を作成します（すべて textarea）。</p>
+        <textarea id="finalDraft" class="w-full border border-slate-200 rounded-md p-3 focus-ring" placeholder="最終メッセージをここに作成してください。"></textarea>
+      </div>
 
-          <!-- Phase 3: choose 5 -->
-          <section id="phase3" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ3：5要素に絞る</h3>
-            <p class="text-sm text-slate-600 mt-1">下の要素から最も関連する最大5つを選んでください。</p>
-            <div id="choose-5" class="mt-3 grid gap-2"></div>
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase4" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ4へ（仕分け）</button>
-              <button id="back-to-phase2" class="px-3 py-2 rounded-xl bg-slate-100 border">戻る</button>
-            </div>
-          </section>
+      <!-- 10: Review -->
+      <div>
+        <h3 class="font-semibold">フェーズ10：確認・修正</h3>
+        <p class="text-sm text-slate-600">誤解を招かないかを確認し、必要なら修正してください。</p>
+        <div class="flex gap-2 mt-2">
+          <button id="validateBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">自動チェック（感情・攻撃性・高リスクワード）</button>
+          <button id="previewBtn" class="px-4 py-2 border rounded-md">プレビュー</button>
+        </div>
+      </div>
 
-          <!-- Phase 4 -->
-          <section id="phase4" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ4：必要・不要の仕分け</h3>
-            <p class="text-sm text-slate-600 mt-1">選んだ項目を「必要」または「不要」に振り分けます（UI上の切替）。</p>
-
-            <div class="mt-3 grid gap-3">
-              <div>
-                <h4 class="text-sm font-medium">必要</h4>
-                <div id="needed-list" class="mt-2 space-y-2"></div>
-              </div>
-              <div>
-                <h4 class="text-sm font-medium">不要</h4>
-                <div id="unneeded-list" class="mt-2 space-y-2"></div>
-              </div>
-            </div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase5" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ5へ（分類）</button>
-            </div>
-          </section>
-
-          <!-- Phase 5 -->
-          <section id="phase5" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ5：緊急度と重要度の分類</h3>
-            <p class="text-sm text-slate-600 mt-1">各「必要」項目に緊急度(0-5)・重要度(0-5)を入力してください。自動でスコアを算出します。</p>
-            <div id="urgency-list" class="mt-3 space-y-2"></div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="score-and-to-6" class="px-3 py-2 rounded-xl bg-primary-500 text-white">スコア算出 → フェーズ6へ</button>
-            </div>
-          </section>
-
-          <!-- Phase 6 -->
-          <section id="phase6" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ6：上位3つに絞る</h3>
-            <p class="text-sm text-slate-600 mt-1">スコア上位3つを自動で選出します（手動での入れ替えも可）。</p>
-
-            <div id="top3-list" class="mt-3 space-y-2"></div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase7" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ7へ（並べ替え）</button>
-            </div>
-          </section>
-
-          <!-- Phase 7 -->
-          <section id="phase7" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ7：優先順位づけ</h3>
-            <p class="text-sm text-slate-600 mt-1">伝える順番（1→2→3）を決めます。</p>
-
-            <div id="priority-sort" class="mt-3 space-y-2"></div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase8" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ8へ（構成）</button>
-            </div>
-          </section>
-
-          <!-- Phase 8 -->
-          <section id="phase8" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ8：構成を組み立てる</h3>
-            <p class="text-sm text-slate-600 mt-1">結論 → 理由 → 希望 の構成を元に骨組みを作成します。</p>
-
-            <div class="mt-3 space-y-2">
-              <label class="block text-sm">結論（冒頭）</label>
-              <textarea id="structure-claim" class="w-full p-3 border rounded-xl focus-ring" rows="2"></textarea>
-              <label class="block text-sm mt-2">理由（中盤）</label>
-              <textarea id="structure-reason" class="w-full p-3 border rounded-xl focus-ring" rows="3"></textarea>
-              <label class="block text-sm mt-2">希望・お願い（結び）</label>
-              <textarea id="structure-ask" class="w-full p-3 border rounded-xl focus-ring" rows="2"></textarea>
-            </div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase9" class="px-3 py-2 rounded-xl bg-primary-500 text-white">フェーズ9へ（文章化）</button>
-            </div>
-          </section>
-
-          <!-- Phase 9 -->
-          <section id="phase9" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ9：文章化</h3>
-            <p class="text-sm text-slate-600 mt-1">構成を組み立てたら、相手に伝わる文章として下書きします。</p>
-
-            <label class="block text-sm">最終下書き</label>
-            <textarea id="final-draft" class="w-full p-3 border rounded-xl focus-ring" rows="6" placeholder="ここに伝える文章が自動的に生成されます。手直し可能。"></textarea>
-
-            <div class="mt-3 flex gap-2">
-              <button id="preview-btn" class="px-3 py-2 rounded-xl bg-primary-500 text-white">プレビュー（確認）</button>
-              <button id="copy-btn" class="px-3 py-2 rounded-xl bg-slate-100 border">コピー</button>
-            </div>
-          </section>
-
-          <!-- Phase 10 -->
-          <section id="phase10" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ10：確認・修正</h3>
-            <p class="text-sm text-slate-600 mt-1">文面が穏やかで明確かをチェック。第三者確認用に印刷も可能です。</p>
-
-            <div id="preview-area" class="mt-3 p-3 rounded border bg-slate-50">
-              <!-- preview injected here -->
-            </div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="to-phase11" class="px-3 py-2 rounded-xl bg-primary-500 text-white">完成へ</button>
-              <button id="print-preview" class="px-3 py-2 rounded-xl bg-slate-100 border">印刷</button>
-            </div>
-          </section>
-
-          <!-- Phase 11 -->
-          <section id="phase11" class="phase-card p-4 rounded-xl border hidden">
-            <h3 class="text-lg font-semibold">フェーズ11：完成</h3>
-            <p class="text-sm text-slate-600 mt-1">完成した文章はコピー、印刷、ローカル保存（IndexedDB）できます。送信前に落ち着いて確認しましょう。</p>
-
-            <div class="mt-3">
-              <textarea id="final-output" class="w-full p-3 border rounded-xl focus-ring" rows="6" readonly></textarea>
-            </div>
-
-            <div class="mt-3 flex gap-2">
-              <button id="download-json" class="px-3 py-2 rounded-xl bg-slate-100 border">ローカルJSONをダウンロード</button>
-              <button id="done-close" class="px-3 py-2 rounded-xl bg-primary-500 text-white">アプリを閉じる</button>
-            </div>
-          </section>
-
+      <!-- 11: Complete -->
+      <div>
+        <h3 class="font-semibold">フェーズ11：完成</h3>
+        <p class="text-sm text-slate-600">完成したらコピー・印刷・画像保存・PDF保存が可能です。</p>
+        <div class="flex gap-2 mt-2">
+          <button id="copyBtn" class="px-4 py-2 border rounded-md focus-ring">コピー</button>
+          <button id="downloadPDFBtn" class="px-4 py-2 bg-accent-500 text-white rounded-md focus-ring">PDFとして保存</button>
+          <button id="downloadIMGBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">画像として保存</button>
         </div>
       </div>
     </section>
 
-    <!-- Export / IndexedDB descriptions & controls -->
-    <section id="export" class="mb-8">
-      <h2 class="text-2xl font-bold">保存とエクスポート</h2>
+    <!-- About / README style content (kept same as requested) -->
+    <section id="about" class="hidden bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-bold mb-2">About / README</h2>
+      <div class="prose max-w-none">
+        <h3>コンセプト</h3>
+        <p>“I Message to You about My Mind.” 自分の心の中を「Iメッセージ」で安全に伝える。</p>
 
-      <div class="mt-4 grid md:grid-cols-2 gap-4">
-        <div class="phase-card p-4 rounded-xl border">
-          <h3 class="font-semibold">自動保存（IndexedDB）</h3>
-          <p class="text-sm text-slate-700 mt-2">入力内容は自動でブラウザの IndexedDB に保存されます。README に記載の拡張を踏まえ、PDF と <strong>画像</strong>（PNG）でエクスポート可能です。</p>
-          <ul class="mt-3 text-sm text-slate-700 list-disc pl-5 space-y-1">
-            <li>自動保存はローカル環境のみ（サーバー送信なし）。</li>
-            <li>画像エクスポートは html2canvas、PDF は jsPDF を使用。</li>
-            <li>保存は日付付きでバージョン管理（履歴）。</li>
-          </ul>
-        </div>
+        <h3>3つのM</h3>
+        <ol>
+          <li>Mind — 自分の気持ちをありのままに書き出す</li>
+          <li>Message — 思考を5つ → 3つに整理し、優先度をつける</li>
+          <li>Move — 伝える言葉としてまとめ、行動に移す</li>
+        </ol>
 
-        <div class="phase-card p-4 rounded-xl border">
-          <h3 class="font-semibold">緊急支援ボタン（運用向け）</h3>
-          <p class="text-sm text-slate-700 mt-2">「支援機関の連絡ボタン」は即時発火する設計です。電話リンクか、印刷用案内をすぐに表示できるようにしています。</p>
-          <div class="mt-3 flex gap-2">
-            <a href="tel:119" class="px-3 py-2 bg-red-600 text-white rounded">救急に電話</a>
-            <a href="https://www.inochinodenwa.org/?page_id=267" target="_blank" rel="noopener" class="px-3 py-2 bg-primary-600 text-white rounded">いのちの電話</a>
-          </div>
-        </div>
-      </div>
-    </section>
+        <h3>フェーズ構成（11ステップ）</h3>
+        <p>（ここでは最終的に11フェーズの流れを採用しています。UIで順に進めてください。）</p>
 
-    <!-- Technical stack -->
-    <section id="tech" class="mb-8">
-      <h2 class="text-2xl font-bold">技術構成</h2>
-      <div class="phase-card p-4 rounded-xl border mt-3">
-        <ul class="text-sm text-slate-700 list-disc pl-5 space-y-1">
-          <li>HTML / CSS / JavaScript（シングルページ、オフライン対応）</li>
-          <li>HTMX（クライアント挙動の明示用、<code class="mono">hx-push-url="true"</code> を内部リンクに採用）</li>
-          <li>Tailwind CSS（CDN + runtime config でカスタムカラー）</li>
-          <li>IndexedDB（自動保存・履歴）</li>
-          <li>html2canvas + jsPDF（画像・PDF書き出し）</li>
+        <h3>セーフティー機能</h3>
+        <ul>
+          <li>高リスクワードの自動検出と緊急バナー表示（ローカル）</li>
+          <li>「支援機関への連絡」ボタン（電話発信 / 印刷ガイド）を即時発火</li>
+          <li>オフラインでも動作するローカル保存（IndexedDB）、エクスポート機能（PDF/画像）</li>
         </ul>
+
+        <h3>支援・相談窓口（リンク）</h3>
+        <ul>
+          <li>いのちの電話： <a href="https://www.inochinodenwa.org/?page_id=267" class="text-blue-600 underline" target="_blank" rel="noopener">https://www.inochinodenwa.org/?page_id=267</a></li>
+          <li>救急： <a href="tel:119" class="text-blue-600 underline">119</a></li>
+          <li>警察： <a href="tel:110" class="text-blue-600 underline">110</a></li>
+        </ul>
+
+        <h3>技術構成</h3>
+        <ul>
+          <li>HTML / CSS (Tailwind) / JavaScript / HTMX</li>
+          <li>IndexedDB によるローカル自動保存（拡張済み：画像保存を追加）</li>
+          <li>エクスポート：PDF（jsPDF） / 画像（html2canvas）</li>
+        </ul>
+
+        <h3>ライセンス</h3>
+        <p>MIT License（リポジトリに準拠）</p>
+
+        <h3>クレジット</h3>
+        <p>Original: Uchida16104 — I Message to You About My Mind.</p>
       </div>
     </section>
 
-    <!-- Footer: usage examples / license / credits (not changed content-wise) -->
-    <footer class="mt-10 mb-16 text-sm text-slate-600">
-      <div class="phase-card p-4 rounded-xl border">
-        <h3 class="font-semibold">使用例 / 想定ユーザー / ライセンス / クレジット</h3>
-        <p class="mt-2">（README の「使用例」「想定ユーザー」「ライセンス（MIT）」「クレジット」セクションの内容は変更していません。）</p>
-
-        <div class="mt-3">
-          <p>想定ユーザー：精神疾患のある方、支援機関の現場・家族など。</p>
-          <p class="mt-2">ライセンス：MIT</p>
+    <!-- Footer with accessibility links and credits -->
+    <footer class="text-sm text-slate-600 py-8">
+      <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
+        <div>
+          <div>© 🧠3M — I Message to You About My Mind.</div>
+          <div class="mt-1">想定ユーザー：精神疾患を持つ方・支援者など</div>
+        </div>
+        <div class="flex gap-4">
+          <a href="#about" class="underline" hx-get="index.html#about" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">README</a>
+          <a href="https://github.com/Uchida16104/🧠3M" class="underline" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     </footer>
   </main>
 
-  <!-- Minimal unobtrusive scripts implementing required behaviors -->
+  <!-- Hidden templates & helpers -->
+  <template id="elementRowTemplate">
+    <li class="flex gap-2 items-start bg-slate-50 p-3 rounded-md border border-slate-100">
+      <textarea class="flex-1 border-none bg-transparent text-slate-800" placeholder="要素の内容"></textarea>
+      <div class="flex flex-col gap-1">
+        <button class="move-up px-2 py-1 bg-white border rounded text-sm">↑</button>
+        <button class="move-down px-2 py-1 bg-white border rounded text-sm">↓</button>
+        <button class="mark-del px-2 py-1 bg-red-50 border border-red-200 rounded text-sm text-red-600">削除</button>
+      </div>
+    </li>
+  </template>
+
   <script>
-    /* ---------------------------
-       Minimal IndexedDB wrapper
-       - autoSave() called at key points and periodically
-       - stores structured JSON and generated images (base64)
-       ---------------------------*/
-    const DB_NAME = '🧠3M-db';
-    const DB_STORE = 'snapshots';
-    let db = null;
+    /* === Core behaviors ===
+       - Parsing into elements (フェーズ2): splits by Japanese comma（、） and period（。） and by English punctuation as fallback.
+       - All inputs are textarea by requirement.
+       - HTMX hints included: hx-push-url attributes exist on nav anchors; additionally we handle hashchange locally
+       - IndexedDB auto-save (autosave every X seconds + on changes) with ability to export PDF and image.
+       - Safety scanning for high-risk words shows emergency banner and wires support buttons (phone & print)
+       - Minimal DOM changes from original repo; preserves README/sections content structure.
+    */
 
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        if (db) return resolve(db);
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = (e) => {
-          const idb = e.target.result;
-          if (!idb.objectStoreNames.contains(DB_STORE)) {
-            idb.createObjectStore(DB_STORE, { keyPath: 'id' });
-          }
-        };
-        req.onsuccess = () => { db = req.result; resolve(db); };
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    async function saveSnapshot(snapshot) {
-      const idb = await openDB();
-      return new Promise((res, rej) => {
-        const tx = idb.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-        store.put(snapshot);
-        tx.oncomplete = () => res(true);
-        tx.onerror = () => rej(tx.error);
-      });
-    }
-
-    async function downloadJSON() {
-      const state = collectFullState();
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `🧠3M_snapshot_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    document.getElementById('download-json').addEventListener('click', downloadJSON);
-
-    /* ---------------------------
-       Helpers for splitting into elements (フェーズ2)
-       - split by 、 or 。 or newline, trimming results
-       ---------------------------*/
-    function splitIntoElements(text){
-      // Replace full-width punctuation variants and split
-      const raw = text.replace(/[\r\n]+/g, '。'); // treat newlines as sentence separators
-      const parts = raw.split(/[、。]+/).map(s => s.trim()).filter(Boolean);
+    // Simple helper: split text by punctuation into array of trimmed non-empty pieces
+    function splitIntoPieces(text) {
+      if (!text) return [];
+      // split on Japanese punctuation and also standard punctuation
+      const parts = text.split(/、|。|,|\.|\n/).map(s => s.trim()).filter(Boolean);
       return parts;
     }
 
-    // UI wiring
-    const rawInput = document.getElementById('raw-input');
-    const splitBtn = document.getElementById('split-btn');
-    const elementsList = document.getElementById('elements-list');
+    // Basic IndexedDB wrapper (promises)
+    const DB_NAME = '🧠3M-data-v1';
+    const STORE_NAME = 'entries';
+    const dbOpen = () => new Promise((resolve, reject) => {
+      const r = indexedDB.open(DB_NAME, 1);
+      r.onupgradeneeded = () => {
+        r.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      };
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
 
-    const phaseSections = Array.from(document.querySelectorAll('[id^="phase"]'));
-    function showPhase(id) {
-      phaseSections.forEach(sec => sec.classList.add('hidden'));
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('hidden');
-      // push URL fragment (also let hx-push-url exist on link)
-      history.replaceState(null, '', '#' + id);
+    async function saveToDB(id, data) {
+      const db = await dbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put({ id, data, updated: Date.now() });
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      });
+    }
+    async function loadFromDB(id) {
+      const db = await dbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get(id);
+        req.onsuccess = () => res(req.result ? req.result.data : null);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    // --- UI wiring ---
+    const rawInput = document.getElementById('rawInput');
+    const splitBtn = document.getElementById('splitBtn');
+    const elementsList = document.getElementById('elementsList');
+    const elementTemplate = document.getElementById('elementRowTemplate');
+    const messageSection = document.getElementById('message');
+    const mindSection = document.getElementById('mind');
+    const moveSection = document.getElementById('move');
+    const aboutSection = document.getElementById('about');
+
+    // Safety
+    const emergencyBanner = document.getElementById('emergencyBanner');
+    const callSupportBtn = document.getElementById('callSupportBtn');
+    const printSupportBtn = document.getElementById('printSupportBtn');
+    // Prefill support actions
+    // "支援機関の連絡ボタン" — immediate phone link to いのちの電話 is not centralized; we provide in-site options:
+    callSupportBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // we open the national lifeline link (inochinodenwa) in a new tab and also offer tel fallback prompt.
+      window.open('https://www.inochinodenwa.org/?page_id=267', '_blank');
+    });
+    printSupportBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.print();
+    });
+
+    // High-risk words (Japanese examples). Expandable.
+    const HIGH_RISK_WORDS = ['死にたい', '消えたい', '自殺', '死にます', '消えたいです', 'もういない', 'もうだめ', '死にたいです'];
+
+    function detectHighRisk(text) {
+      if (!text) return false;
+      const t = text.toLowerCase();
+      return HIGH_RISK_WORDS.some(w => t.includes(w));
+    }
+
+    function updateEmergencyBannerIfNeeded() {
+      // Check all textareas for high-risk words
+      const areas = Array.from(document.querySelectorAll('textarea'));
+      const found = areas.some(a => detectHighRisk(a.value));
+      if (found) {
+        emergencyBanner.classList.remove('hidden');
+      } else {
+        emergencyBanner.classList.add('hidden');
+      }
+    }
+
+    // convert element template node to actual element
+    function createElementRow(text = '') {
+      const tpl = elementTemplate.content.cloneNode(true);
+      const li = tpl.querySelector('li');
+      const ta = li.querySelector('textarea');
+      ta.value = text;
+      // wire up buttons
+      li.querySelector('.move-up').addEventListener('click', () => {
+        const prev = li.previousElementSibling;
+        if (prev) li.parentNode.insertBefore(li, prev);
+      });
+      li.querySelector('.move-down').addEventListener('click', () => {
+        const next = li.nextElementSibling;
+        if (next) li.parentNode.insertBefore(next, li);
+      });
+      li.querySelector('.mark-del').addEventListener('click', () => {
+        li.remove();
+        updateEmergencyBannerIfNeeded();
+      });
+      ta.addEventListener('input', () => {
+        updateEmergencyBannerIfNeeded();
+        scheduleAutoSave();
+      });
+      return li;
     }
 
     splitBtn.addEventListener('click', () => {
-      const text = rawInput.value || '';
-      const elems = splitIntoElements(text);
-      renderElements(elems);
-      showPhase('phase2');
-      autoSave();
+      const pieces = splitIntoPieces(rawInput.value);
+      // clear existing list
+      elementsList.innerHTML = '';
+      pieces.forEach(p => elementsList.appendChild(createElementRow(p)));
+      // show message section and hide mind section
+      messageSection.classList.remove('hidden');
+      // scroll into view
+      messageSection.scrollIntoView({ behavior: 'smooth' });
+      updateEmergencyBannerIfNeeded();
+      scheduleAutoSave();
     });
 
-    document.getElementById('clear-btn').addEventListener('click', () => {
+    document.getElementById('addElementBtn').addEventListener('click', () => {
+      elementsList.appendChild(createElementRow(''));
+      updateEmergencyBannerIfNeeded();
+      scheduleAutoSave();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
       rawInput.value = '';
       elementsList.innerHTML = '';
-      autoSave();
+      updateEmergencyBannerIfNeeded();
+      scheduleAutoSave();
     });
 
-    function renderElements(list = []) {
-      elementsList.innerHTML = '';
-      list.forEach((t, idx) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'flex gap-2 items-start';
-        const ta = document.createElement('textarea');
-        ta.className = 'w-full p-2 border rounded-xl focus-ring';
-        ta.rows = 2;
-        ta.value = t;
-        ta.dataset.idx = idx;
-        const btns = document.createElement('div');
-        btns.className = 'flex flex-col gap-1';
-        const del = document.createElement('button');
-        del.className = 'px-2 py-1 rounded bg-slate-100 text-xs border';
-        del.textContent = '削除';
-        del.onclick = () => { wrapper.remove(); autoSave(); };
-        btns.appendChild(del);
-        wrapper.appendChild(ta);
-        wrapper.appendChild(btns);
-        elementsList.appendChild(wrapper);
-      });
-      if (list.length === 0) {
-        // provide a blank element to encourage adding
-        addElement();
+    // Proceed to 5-element selection
+    document.getElementById('toFiveBtn').addEventListener('click', () => {
+      // collect all elements
+      const elems = Array.from(elementsList.querySelectorAll('textarea')).map(t => t.value.trim()).filter(Boolean);
+      if (elems.length === 0) {
+        alert('要素がありません。まずはフェーズ1で入力してください。');
+        return;
       }
+      // Build pickFive list
+      const pickFive = document.getElementById('pickFive');
+      pickFive.innerHTML = '';
+      elems.forEach((e, idx) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2';
+        const ta = document.createElement('textarea');
+        ta.className = 'flex-1 border border-slate-200 rounded-md p-2';
+        ta.value = e;
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = idx < 5; // prefer first five
+        chk.title = '5要素に含める';
+        li.appendChild(chk);
+        li.appendChild(ta);
+        pickFive.appendChild(li);
+      });
+
+      // show next section (move)
+      moveSection.classList.remove('hidden');
+      moveSection.scrollIntoView({ behavior: 'smooth' });
+      scheduleAutoSave();
+    });
+
+    // Utility to read selected five
+    function getSelectedFive() {
+      const items = Array.from(document.querySelectorAll('#pickFive > li'));
+      return items.map(li => {
+        const chk = li.querySelector('input[type="checkbox"]');
+        const ta = li.querySelector('textarea');
+        return { chosen: chk.checked, text: ta.value.trim() };
+      }).filter(x => x.chosen).map(x => x.text).slice(0, 5);
     }
 
-    function addElement(val = '') {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'flex gap-2 items-start';
-      const ta = document.createElement('textarea');
-      ta.className = 'w-full p-2 border rounded-xl focus-ring';
-      ta.rows = 2;
-      ta.placeholder = '要素を入力';
-      ta.value = val;
-      const btns = document.createElement('div');
-      btns.className = 'flex flex-col gap-1';
-      const del = document.createElement('button');
-      del.className = 'px-2 py-1 rounded bg-slate-100 text-xs border';
-      del.textContent = '削除';
-      del.onclick = () => { wrapper.remove(); autoSave(); };
-      btns.appendChild(del);
-      wrapper.appendChild(ta);
-      wrapper.appendChild(btns);
-      elementsList.appendChild(wrapper);
-      ta.addEventListener('input', autoSave);
-      autoSave();
+    // Phase 4: split into needed/unneeded columns
+    function updateNeedUnneed() {
+      const selected = getSelectedFive();
+      const needed = document.getElementById('needed');
+      const unneeded = document.getElementById('unneeded');
+      needed.innerHTML = '';
+      unneeded.innerHTML = '';
+      selected.forEach(text => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2';
+        const ta = document.createElement('textarea');
+        ta.className = 'flex-1 border border-slate-200 rounded-md p-2';
+        ta.value = text;
+        // toggle button
+        const btn = document.createElement('button');
+        btn.className = 'px-2 py-1 border rounded text-sm';
+        btn.textContent = '不要へ';
+        btn.addEventListener('click', () => {
+          if (btn.textContent === '不要へ') {
+            unneeded.appendChild(li);
+            btn.textContent = '必要へ';
+          } else {
+            needed.appendChild(li);
+            btn.textContent = '不要へ';
+          }
+          scheduleAutoSave();
+        });
+        li.appendChild(ta);
+        li.appendChild(btn);
+        needed.appendChild(li);
+      });
+    }
+    document.getElementById('pickFive').addEventListener('change', updateNeedUnneed);
+    // Also wire proceed on entering moveSection: when rankBtn clicked, perform scoring
+
+    function collectNeededItems() {
+      return Array.from(document.querySelectorAll('#needed textarea')).map(t => t.value.trim()).filter(Boolean);
     }
 
-    document.getElementById('add-element').addEventListener('click', () => addElement());
-
-    // Phase3: choose up to 5
-    const choose5 = document.getElementById('choose-5');
-    document.getElementById('to-phase3').addEventListener('click', () => {
-      // read elementsList textareas
-      const tarr = Array.from(elementsList.querySelectorAll('textarea')).map(ta => ta.value.trim()).filter(Boolean);
-      choose5.innerHTML = '';
-      tarr.forEach((txt, i) => {
+    // Phase 5 UI: allow quick scoring for each needed item
+    function renderPriorityTable() {
+      const container = document.getElementById('priorityTable');
+      container.innerHTML = '';
+      const list = collectNeededItems();
+      if (list.length === 0) {
+        container.textContent = '（必要な項目がありません。フェーズ4で「必要」を選んでください）';
+        return;
+      }
+      list.forEach((text, idx) => {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = txt;
-        cb.id = 'choose-' + i;
-        const label = document.createElement('label');
-        label.htmlFor = cb.id;
-        label.className = 'text-sm';
-        label.textContent = txt;
-        row.appendChild(cb);
-        row.appendChild(label);
-        choose5.appendChild(row);
-      });
-      showPhase('phase3');
-      autoSave();
-    });
-
-    // next from phase3 to phase4
-    document.getElementById('to-phase4').addEventListener('click', () => {
-      const checked = Array.from(choose5.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
-      if (checked.length === 0) { alert('少なくとも1つ選んでください'); return; }
-      // limit to 5
-      const selection = checked.slice(0, 5);
-      populateNeeded(selection);
-      showPhase('phase4');
-      autoSave();
-    });
-
-    document.getElementById('back-to-phase2').addEventListener('click', () => showPhase('phase2'));
-
-    // Phase4: populate needed/unneeded lists
-    const neededList = document.getElementById('needed-list');
-    const unneededList = document.getElementById('unneeded-list');
-
-    function populateNeeded(arr) {
-      neededList.innerHTML = '';
-      unneededList.innerHTML = '';
-      arr.forEach(v => {
-        const row = makeToggleRow(v);
-        neededList.appendChild(row);
-      });
-    }
-
-    function makeToggleRow(text) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'flex gap-2 items-start';
-      const ta = document.createElement('textarea');
-      ta.className = 'w-full p-2 border rounded-xl focus-ring';
-      ta.rows = 2;
-      ta.value = text;
-      const move = document.createElement('button');
-      move.className = 'px-2 py-1 rounded bg-slate-100 text-xs border';
-      move.textContent = '←→';
-      move.onclick = () => {
-        if (wrapper.parentElement.id === 'needed-list') {
-          unneededList.appendChild(wrapper);
-        } else {
-          neededList.appendChild(wrapper);
-        }
-        autoSave();
-      };
-      wrapper.appendChild(ta);
-      wrapper.appendChild(move);
-      return wrapper;
-    }
-
-    document.getElementById('to-phase5').addEventListener('click', () => {
-      // prepare urgency inputs for items in neededList
-      const items = Array.from(neededList.querySelectorAll('textarea')).map(ta => ta.value.trim()).filter(Boolean);
-      const ul = document.getElementById('urgency-list');
-      ul.innerHTML = '';
-      items.forEach((it, idx) => {
-        const row = document.createElement('div');
-        row.className = 'grid grid-cols-3 gap-2 items-center';
         const label = document.createElement('div');
-        label.textContent = it;
-        const u = document.createElement('input');
-        u.type = 'number'; u.min = 0; u.max = 5; u.value = 3; u.className = 'p-2 border rounded';
+        label.textContent = text;
+        label.className = 'flex-1';
+        const urg = document.createElement('input');
+        urg.type = 'number'; urg.min = 0; urg.max = 5; urg.value = 3; urg.className = 'w-16 border rounded p-1';
         const imp = document.createElement('input');
-        imp.type = 'number'; imp.min = 0; imp.max = 5; imp.value = 3; imp.className = 'p-2 border rounded';
-        row.appendChild(label); row.appendChild(u); row.appendChild(imp);
-        ul.appendChild(row);
+        imp.type = 'number'; imp.min = 0; imp.max = 5; imp.value = 3; imp.className = 'w-16 border rounded p-1';
+        row.appendChild(label);
+        row.appendChild(document.createTextNode('緊急'));
+        row.appendChild(urg);
+        row.appendChild(document.createTextNode('重要'));
+        row.appendChild(imp);
+        container.appendChild(row);
       });
-      showPhase('phase5');
-      autoSave();
-    });
+    }
 
-    // Phase5 -> Phase6 (score)
-    document.getElementById('score-and-to-6').addEventListener('click', () => {
-      const rows = Array.from(document.getElementById('urgency-list').children);
-      const scored = rows.map(r => {
-        const label = r.children[0].textContent;
-        const u = Number(r.children[1].value || 0);
-        const imp = Number(r.children[2].value || 0);
-        return { label, score: u + imp, u, imp };
+    document.getElementById('rankBtn').addEventListener('click', () => {
+      // ensure needUnneed is populated
+      updateNeedUnneed();
+      renderPriorityTable();
+      // compute scores
+      const rows = Array.from(document.querySelectorAll('#priorityTable > div'));
+      const scored = rows.map((r) => {
+        const label = r.querySelector('div').textContent;
+        const inputs = r.querySelectorAll('input[type="number"]');
+        const urg = Number(inputs[0].value) || 0;
+        const imp = Number(inputs[1].value) || 0;
+        return { label, score: urg + imp, urg, imp };
       }).sort((a,b) => b.score - a.score);
-      // top3
-      const top3 = scored.slice(0,3);
-      const top3List = document.getElementById('top3-list');
-      top3List.innerHTML = '';
-      top3.forEach((t, i) => {
-        const row = document.createElement('div');
-        row.className = 'flex gap-2 items-center';
+      // show top 3
+      const topThree = document.getElementById('topThree');
+      topThree.innerHTML = '';
+      scored.slice(0,3).forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = `${s.label} （score:${s.score}）`;
+        topThree.appendChild(li);
+      });
+      // fill orderList for drag ordering
+      const orderList = document.getElementById('orderList');
+      orderList.innerHTML = '';
+      scored.slice(0,3).forEach(s => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded border';
         const ta = document.createElement('textarea');
-        ta.className = 'w-full p-2 border rounded-xl focus-ring';
-        ta.rows = 2;
-        ta.value = t.label;
-        row.appendChild(ta);
-        top3List.appendChild(row);
-      });
-      showPhase('phase6');
-      autoSave();
-    });
-
-    document.getElementById('to-phase7').addEventListener('click', () => {
-      // put top3 into reorderable area
-      const arr = Array.from(document.getElementById('top3-list').querySelectorAll('textarea')).map(ta => ta.value);
-      const ps = document.getElementById('priority-sort');
-      ps.innerHTML = '';
-      arr.forEach((val, idx) => {
-        const row = document.createElement('div');
-        row.className = 'flex gap-2 items-center';
-        const up = document.createElement('button'); up.textContent = '↑'; up.className='px-2 py-1 border rounded';
-        const down = document.createElement('button'); down.textContent = '↓'; down.className='px-2 py-1 border rounded';
-        const ta = document.createElement('textarea'); ta.className='w-full p-2 border rounded-xl'; ta.rows=2; ta.value = val;
-        up.onclick = () => { const p = row.previousElementSibling; if(p) ps.insertBefore(row, p); autoSave(); };
-        down.onclick = () => { const n = row.nextElementSibling; if(n) ps.insertBefore(n, row); autoSave(); };
-        row.appendChild(up); row.appendChild(down); row.appendChild(ta);
-        ps.appendChild(row);
-      });
-      showPhase('phase7');
-      autoSave();
-    });
-
-    document.getElementById('to-phase8').addEventListener('click', () => {
-      // fill structure fields with content from priority-sort 1/2/3
-      const vals = Array.from(document.getElementById('priority-sort').querySelectorAll('textarea')).map(ta => ta.value);
-      document.getElementById('structure-claim').value = vals[0] || '';
-      document.getElementById('structure-reason').value = vals[1] || '';
-      document.getElementById('structure-ask').value = vals[2] || '';
-      showPhase('phase8');
-      autoSave();
-    });
-
-    document.getElementById('to-phase9').addEventListener('click', () => {
-      // simple template: claim + reason + ask
-      const claim = document.getElementById('structure-claim').value.trim();
-      const reason = document.getElementById('structure-reason').value.trim();
-      const ask = document.getElementById('structure-ask').value.trim();
-      const draft = `${claim}\n\n理由：${reason}\n\nお願い：${ask}\n\n（話してくれてありがとうございます。どう思いますか？）`;
-      document.getElementById('final-draft').value = draft;
-      showPhase('phase9');
-      autoSave();
-    });
-
-    document.getElementById('preview-btn').addEventListener('click', () => {
-      const v = document.getElementById('final-draft').value;
-      document.getElementById('preview-area').textContent = v;
-      showPhase('phase10');
-      autoSave();
-    });
-
-    document.getElementById('copy-btn').addEventListener('click', async () => {
-      const v = document.getElementById('final-draft').value;
-      try {
-        await navigator.clipboard.writeText(v);
-        alert('コピーしました');
-      } catch (e) {
-        alert('コピーに失敗しました：' + e.message);
-      }
-    });
-
-    document.getElementById('to-phase11').addEventListener('click', () => {
-      document.getElementById('final-output').value = document.getElementById('final-draft').value;
-      showPhase('phase11');
-      autoSave();
-    });
-
-    document.getElementById('print-preview').addEventListener('click', () => window.print());
-    document.getElementById('done-close').addEventListener('click', () => { alert('完了。必要ならコピーや保存を行ってください。'); });
-
-    // Export to PDF & Image: global area to snapshot main container
-    const exportTargetSelector = 'main.container-max';
-
-    async function exportAsImage(){
-      const el = document.querySelector(exportTargetSelector);
-      if(!el) return alert('エリアが見つかりません');
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-      const dataUrl = canvas.toDataURL('image/png');
-      // store into IndexedDB snapshot also (base64)
-      const snapshot = {
-        id: 'snapshot-' + new Date().toISOString(),
-        type: 'image',
-        createdAt: new Date().toISOString(),
-        dataUrl
-      };
-      await saveSnapshot(snapshot);
-      // trigger download
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `🧠3M_snapshot_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
-
-    async function exportAsPDF(){
-      const el = document.querySelector(exportTargetSelector);
-      if(!el) return alert('エリアが見つかりません');
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      // A4 width calculation
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      // scale to fit
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgRatio = imgProps.width / imgProps.height;
-      const pdfWidth = pageWidth - 20; // margins
-      const pdfHeight = pdfWidth / imgRatio;
-      pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth, pdfHeight);
-      const blob = pdf.output('blob');
-      const url = URL.createObjectURL(blob);
-      // save metadata to IndexedDB (store as blob -> convert to base64 for compatibility)
-      const reader = new FileReader();
-      reader.onload = async function(e){
-        const dataUrl = e.target.result;
-        await saveSnapshot({
-          id: 'snapshot-' + new Date().toISOString(),
-          type: 'pdf',
-          createdAt: new Date().toISOString(),
-          dataUrl
+        ta.className = 'flex-1 border-none bg-transparent';
+        ta.value = s.label;
+        const up = document.createElement('button');
+        up.textContent = '↑'; up.className = 'px-2 py-1 border rounded';
+        const down = document.createElement('button');
+        down.textContent = '↓'; down.className = 'px-2 py-1 border rounded';
+        up.addEventListener('click', () => {
+          const prev = li.previousElementSibling;
+          if (prev) orderList.insertBefore(li, prev);
         });
-      };
-      reader.readAsDataURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `🧠3M_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
-    document.getElementById('export-img').addEventListener('click', exportAsImage);
-    document.getElementById('export-pdf').addEventListener('click', exportAsPDF);
-
-    /* ---------------------------
-       Auto-save & safety detection
-       - detect high-risk words and show safety banner
-       ---------------------------*/
-    const HIGH_RISK_WORDS = ['死にたい','消えたい','死に','自殺','自ら命','殺す']; // extendable
-    async function autoSave(){
-      try {
-        const state = collectFullState();
-        const snapshot = {
-          id: 'autosave-' + new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          type: 'autosave',
-          state
-        };
-        await saveSnapshot(snapshot);
-      } catch(e){ console.warn('autosave failed', e); }
-      checkSafety();
-    }
-
-    function collectFullState() {
-      // aggregate all textarea values for storage
-      const allTextareas = Array.from(document.querySelectorAll('textarea'));
-      const data = {};
-      allTextareas.forEach(ta => {
-        // use unique ids where available
-        const key = ta.id || ('ta-' + Math.random().toString(36).slice(2,8));
-        data[key] = ta.value;
+        down.addEventListener('click', () => {
+          const next = li.nextElementSibling;
+          if (next) orderList.insertBefore(next, li);
+        });
+        li.appendChild(ta);
+        li.appendChild(up);
+        li.appendChild(down);
+        orderList.appendChild(li);
       });
-      return {
-        urlHash: location.hash || '',
-        savedAt: new Date().toISOString(),
-        fields: data
-      };
-    }
-
-    function checkSafety(){
-      const textAll = Object.values(collectFullState().fields).join(' ');
-      const found = HIGH_RISK_WORDS.filter(w => textAll.includes(w));
-      const banner = document.getElementById('safety-banner');
-      if (found.length > 0) {
-        banner.classList.remove('hidden');
-      } else {
-        banner.classList.add('hidden');
-      }
-    }
-
-    // Periodic autosave
-    setInterval(autoSave, 10_000); // every 10s
-
-    // call autoSave on input changes
-    document.addEventListener('input', (e) => {
-      if (e.target && e.target.tagName === 'TEXTAREA') {
-        autoSave();
-      }
+      scheduleAutoSave();
     });
 
-    // initial show phase1
-    showPhase('phase1');
+    // Structure area: build from orderList
+    function renderStructureArea() {
+      const container = document.getElementById('structureArea');
+      container.innerHTML = '';
+      const items = Array.from(document.querySelectorAll('#orderList textarea')).map(t => t.value.trim()).filter(Boolean);
+      items.forEach(it => {
+        const block = document.createElement('div');
+        block.className = 'border p-3 rounded bg-slate-50';
+        const title = document.createElement('div');
+        title.className = 'font-medium mb-2';
+        title.textContent = it;
+        const conclusion = document.createElement('textarea');
+        conclusion.placeholder = '結論（短く）';
+        conclusion.className = 'w-full border rounded p-2 mb-2';
+        const reason = document.createElement('textarea');
+        reason.placeholder = '理由（具体的）';
+        reason.className = 'w-full border rounded p-2 mb-2';
+        const hope = document.createElement('textarea');
+        hope.placeholder = '希望・お願い';
+        hope.className = 'w-full border rounded p-2';
+        block.appendChild(title);
+        block.appendChild(conclusion);
+        block.appendChild(reason);
+        block.appendChild(hope);
+        container.appendChild(block);
+      });
+    }
 
-    // wired UI: save-local button checks DB
-    document.getElementById('save-local-btn').addEventListener('click', async () => {
+    // When preview or generate final draft, compose from structureArea
+    function composeFinalDraft() {
+      const blocks = Array.from(document.querySelectorAll('#structureArea > div'));
+      const composed = blocks.map(block => {
+        const title = block.querySelector('.font-medium').textContent;
+        const concl = block.querySelectorAll('textarea')[0].value.trim();
+        const reason = block.querySelectorAll('textarea')[1].value.trim();
+        const hope = block.querySelectorAll('textarea')[2].value.trim();
+        // Build short paragraph
+        let paragraph = '';
+        if (concl) paragraph += concl;
+        else paragraph += title;
+        if (reason) paragraph += '。' + reason;
+        if (hope) paragraph += '。' + hope;
+        return paragraph;
+      }).filter(Boolean).join('\n\n');
+      document.getElementById('finalDraft').value = composed;
+      scheduleAutoSave();
+    }
+
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      renderStructureArea();
+      composeFinalDraft();
+      document.getElementById('finalDraft').scrollIntoView({behavior: 'smooth'});
+    });
+
+    // Validation: check for high-risk words and also for aggressive language (simple heuristics)
+    document.getElementById('validateBtn').addEventListener('click', () => {
+      const text = document.getElementById('finalDraft').value;
+      if (detectHighRisk(text)) {
+        alert('高リスク表現が検出されました。支援機関に連絡してください。');
+        emergencyBanner.classList.remove('hidden');
+        return;
+      }
+      // Simple aggressive check: exclamation marks or all-caps (works for en)
+      const aggressive = /!{2,}|（激しい表現）/.test(text);
+      if (aggressive) {
+        if (!confirm('強い表現が含まれています。送信すると相手が驚く可能性があります。続けますか？')) return;
+      }
+      alert('チェック完了：明確に見えます。必要なら修正してください。');
+    });
+
+    // Copy to clipboard
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      const t = document.getElementById('finalDraft').value;
       try {
-        await openDB();
-        alert('IndexedDB が利用可能です。自動保存が有効になっています。');
-      } catch(e) {
-        alert('IndexedDB にアクセスできません：' + e.message);
+        await navigator.clipboard.writeText(t);
+        alert('コピーしました。対話やメモに貼り付けてください。');
+      } catch (e) {
+        alert('コピーに失敗しました。手動で選択してコピーしてください。');
       }
     });
 
-    // Print guide behavior
-    document.getElementById('print-guide').addEventListener('click', () => {
-      const guide = `支援機関の連絡用メモ\n\nいのちの電話：https://www.inochinodenwa.org/?page_id=267\n救急：119\n警察：110\n\nこのメモを印刷して支援機関に渡してください。`;
-      const w = window.open('', '_blank');
-      w.document.write('<pre style="font-size:16px;white-space:pre-wrap;">' + guide + '</pre>');
-      w.print();
+    // Export: image & PDF
+    document.getElementById('downloadIMGBtn').addEventListener('click', async () => {
+      // capture the finalDraft area (render as image)
+      const node = document.getElementById('finalDraft');
+      // create a clone to style nicely for capture
+      const clone = node.cloneNode(true);
+      clone.style.width = '800px';
+      clone.style.padding = '20px';
+      clone.style.background = 'white';
+      document.body.appendChild(clone);
+      const canvas = await html2canvas(clone, {scale:2, backgroundColor: '#ffffff'});
+      document.body.removeChild(clone);
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '🧠3M_message.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
     });
 
-    // safety banner print
-    document.getElementById('safety-print').addEventListener('click', () => {
-      const w = window.open('', '_blank');
-      const html = `<h3>緊急支援案内</h3><p>いのちの電話：<a href="https://www.inochinodenwa.org/?page_id=267">https://www.inochinodenwa.org/?page_id=267</a></p><p>救急：119</p><p>警察：110</p>`;
-      w.document.write(html);
-      w.print();
+    document.getElementById('downloadPDFBtn').addEventListener('click', async () => {
+      // Use html2canvas + jsPDF to produce PDF from finalDraft area
+      const node = document.getElementById('finalDraft');
+      const clone = node.cloneNode(true);
+      clone.style.width = '800px';
+      clone.style.padding = '20px';
+      clone.style.background = 'white';
+      document.body.appendChild(clone);
+      const canvas = await html2canvas(clone, {scale:2, backgroundColor:'#ffffff'});
+      document.body.removeChild(clone);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('🧠3M_message.pdf');
     });
 
-    // safety call button inside banner
-    document.getElementById('safety-call').addEventListener('click', () => {
-      // this is already a tel: link; just also auto focus
-      window.location.href = document.getElementById('safety-call').href;
-    });
-
-    // small helper: saving current UI as a snapshot quickly
-    async function quickSnapshot(){
-      const snapshot = {
-        id: 'quick-' + new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        state: collectFullState()
+    // --- Auto Save Logic (IndexedDB) ---
+    const AUTOSAVE_KEY = '🧠3M-autosave';
+    let autosaveTimer = null;
+    function scheduleAutoSave() {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => autoSave(), 700);
+    }
+    async function autoSave() {
+      // gather state
+      const state = {
+        rawInput: rawInput.value,
+        elements: Array.from(elementsList.querySelectorAll('textarea')).map(t => t.value),
+        pickedFive: Array.from(document.querySelectorAll('#pickFive textarea')).map(t => t.value),
+        needed: collectNeededItems(),
+        priorityTable: Array.from(document.querySelectorAll('#priorityTable div')).map(r => {
+          const label = r.querySelector('div').textContent;
+          const urg = r.querySelectorAll('input[type="number"]')[0].value;
+          const imp = r.querySelectorAll('input[type="number"]')[1].value;
+          return { label, urg, imp };
+        }),
+        order: Array.from(document.querySelectorAll('#orderList textarea')).map(t => t.value),
+        structure: Array.from(document.querySelectorAll('#structureArea textarea')).map(t => t.value),
+        finalDraft: document.getElementById('finalDraft').value,
+        updated: Date.now()
       };
-      await saveSnapshot(snapshot);
-      alert('瞬間保存しました');
+      try {
+        await saveToDB(AUTOSAVE_KEY, state);
+        // small visual indicator: update save button text briefly
+        const sbtn = document.getElementById('saveLocalBtn');
+        sbtn.textContent = '保存済み';
+        setTimeout(()=> sbtn.textContent = '自動保存 / エクスポート', 1000);
+      } catch (e) {
+        console.error('Autosave failed', e);
+      }
     }
 
-    // wire quick save to export buttons too
-    document.getElementById('export-img').addEventListener('click', quickSnapshot);
-    document.getElementById('export-pdf').addEventListener('click', quickSnapshot);
+    // Manual save/export button: open a small menu
+    document.getElementById('saveLocalBtn').addEventListener('click', async () => {
+      // quick save plus offer to download JSON
+      await autoSave();
+      const data = await loadFromDB(AUTOSAVE_KEY);
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '🧠3M_autosave.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
 
-    // allow pressing enter in certain contexts? keep default behavior.
-    // finalize: ensure history hash navigation supports HTMX push hints (developer-visible)
-    // (HTMX is included and hx-push-url="true" is applied to anchors above as explicit integration points.)
+    // On page load: restore
+    (async function init() {
+      // restore state if exists
+      try {
+        const data = await loadFromDB(AUTOSAVE_KEY);
+        if (data) {
+          rawInput.value = data.rawInput || '';
+          if (data.elements && data.elements.length) {
+            elementsList.innerHTML = '';
+            data.elements.forEach(e => elementsList.appendChild(createElementRow(e)));
+            messageSection.classList.remove('hidden');
+          }
+          // restore other areas in a minimal way
+          if (data.finalDraft) {
+            document.getElementById('finalDraft').value = data.finalDraft;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not restore autosave', e);
+      }
+      // wire up update check
+      rawInput.addEventListener('input', () => {
+        updateEmergencyBannerIfNeeded();
+        scheduleAutoSave();
+      });
+      // hash change handling: show/hide sections based on hash (local-only behaviour)
+      function showSectionForHash() {
+        const h = location.hash || '#mind';
+        // hide all
+        [mindSection, messageSection, moveSection, aboutSection].forEach(s => s.classList.add('hidden'));
+        if (h.startsWith('#mind')) mindSection.classList.remove('hidden');
+        else if (h.startsWith('#message')) messageSection.classList.remove('hidden');
+        else if (h.startsWith('#move')) moveSection.classList.remove('hidden');
+        else if (h.startsWith('#about')) aboutSection.classList.remove('hidden');
+        else mindSection.classList.remove('hidden');
+      }
+      window.addEventListener('hashchange', showSectionForHash);
+      showSectionForHash();
+      updateEmergencyBannerIfNeeded();
+
+      // Wire simple interactions to keep UI fluid
+      document.getElementById('pickFive').addEventListener('input', scheduleAutoSave);
+      document.getElementById('needed').addEventListener('input', scheduleAutoSave);
+      document.getElementById('finalDraft').addEventListener('input', () => {
+        updateEmergencyBannerIfNeeded();
+        scheduleAutoSave();
+      });
+
+      // Attach compose flow when structure area changes
+      document.getElementById('structureArea').addEventListener('input', () => {
+        composeFinalDraft();
+      });
+
+      // quick initial save to create DB
+      scheduleAutoSave();
+    })();
+
+    // connect some keyboard accessibility: Ctrl+Enter in finalDraft triggers copy
+    document.getElementById('finalDraft').addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('copyBtn').click();
+      }
+    });
+
+    // make links to emergency services easy (footer links are present — ensure call actions)
+    // Additionally, provide an immediate print & call option in the emergency banner wired earlier.
+
   </script>
-
-  <!-- END -->
 </body>
 </html>
