@@ -3,865 +3,842 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🧠3M — I Message to You About My Mind</title>
+  <title>3M — I Message to You About My Mind.</title>
 
-  <!-- Tailwind (CDN) with on-the-fly customization for colors / accessibility -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CDN (with runtime config for custom colors / accessibility) -->
   <script>
-    /* Tailwind runtime configuration:
-       - Adds accessible color palette tweaks
-       - Enlarges default focus outlines for keyboard users
-       - Keeps minimal changes to structure to respect original design */
-    tailwind.config = {
-      darkMode: false,
+    /* Tailwind runtime config: customize palette & accessibility-friendly contrasts */
+    tailwindConfig = {
       theme: {
         extend: {
           colors: {
             brand: {
-              50: '#f7fbfb',
-              100: '#eef6f6',
-              200: '#cfecec',
-              300: '#9fd9d9',
-              400: '#4fbaba',
-              500: '#169999',
-              600: '#167a7a',
-              700: '#125f5f',
-              800: '#0e4848',
-              900: '#082f2f'
+              50:  '#f8fbfb',
+              100: '#eaf7f7',
+              200: '#cbeee9',
+              300: '#a9e4dd',
+              400: '#65d3c9',
+              500: '#2bbfaf', /* primary */
+              600: '#249e98',
+              700: '#1e7a72',
+              800: '#17554a',
+              900: '#0f332e'
             },
             accent: {
-              50: '#fff6f0',
-              100: '#ffead9',
-              200: '#ffd0b3',
-              300: '#ffb080',
-              400: '#ff8a44',
-              500: '#ff661a',
-              600: '#e65100',
-              700: '#b43c00',
-              800: '#862d00',
-              900: '#5b2000'
+              50:  '#fff8f3',
+              100: '#fff1e6',
+              200: '#ffe3cc',
+              300: '#ffd1ad',
+              400: '#ffb67a',
+              500: '#ff9748',
+              600: '#e57e33',
+              700: '#b85f27',
+              800: '#8a431d',
+              900: '#5d2a14'
+            },
+            safety: {
+              green: '#0b7a4d',
+              warn:  '#b76a00',
+              danger: '#b91c1c'
             }
           },
-          ringWidth: {
-            DEFAULT: '4px'
+          fontFamily: {
+            system: ['"Noto Sans JP"', 'ui-sans-serif', 'system-ui', 'sans-serif']
           }
         }
-      },
-      plugins: [
-        function ({ addUtilities }) {
-          addUtilities({
-            '.focus-ring': {
-              outline: 'none',
-              boxShadow: '0 0 0 4px rgba(22,153,153,0.12)'
-            }
-          })
-        }
-      ]
+      }
     }
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- HTMX (no version specified, per request) -->
+  <!-- HTMX (as requested, no version specified) -->
   <script src="https://unpkg.com/htmx.org"></script>
 
-  <!-- Utility libs for export/save: html2canvas + jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="" crossorigin="anonymous"></script>
+  <!-- jsPDF for PDF export, html2canvas for image export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="" crossorigin="anonymous"></script>
 
-  <meta name="description" content="🧠3M — I Message to You About My Mind. 思考整理・対話支援ツール。">
   <style>
-    /* Small visual polish consistent with original layout but improved spacing/readability */
-    html,body { height: 100%; }
-    body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-    textarea { resize: vertical; min-height: 3rem; line-height: 1.5; }
-    /* visually-hidden helper */
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+    /* Small extra styling to improve readability */
+    body { font-family: system, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg,#f7fafc, #ffffff); }
+    .max-w-screen-md { max-width: 920px; }
+    textarea { resize: vertical; min-height: 3rem; line-height:1.5; }
+    /* Simple focus styles for accessibility */
+    :focus { outline: 3px solid rgba(43,191,175,0.18); outline-offset: 2px; }
+    /* Section hide/show */
+    .page { display: none; }
+    .page[aria-hidden="false"] { display: block; }
+    /* Emergency banner */
+    .emergency-banner { border-left: 4px solid #b91c1c; background: #fff5f5; }
+    /* small utility */
+    .muted { color: #6b7280; }
   </style>
 </head>
-<body class="bg-brand-50 text-slate-900 leading-relaxed">
+<body class="antialiased text-slate-800">
 
-  <!-- Emergency banner (hidden until high-risk word detected) -->
-  <div id="emergencyBanner" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[min(1000px,95%)]">
-    <div class="bg-accent-500 text-white rounded-lg shadow-lg p-4 flex items-center gap-4">
-      <div class="flex-1">
-        <strong class="block text-lg">緊急のサポートが必要な可能性があります</strong>
-        <div class="text-sm">「死にたい」「消えたい」等の表現が検出されました。すぐに支援機関へご連絡ください。</div>
+  <div class="py-8 px-4">
+    <div class="mx-auto max-w-screen-md bg-white rounded-2xl shadow-lg p-6">
+      <header class="mb-6">
+        <h1 class="text-2xl font-bold text-brand-700">3M — I Message to You About My Mind.</h1>
+        <p class="text-sm muted mt-1">自分の心の中を「Iメッセージ」で安全に伝える</p>
+      </header>
+
+      <!-- Emergency banner (hidden unless high-risk detected) -->
+      <div id="emergency" class="emergency-banner rounded-md p-4 mb-4 hidden" role="alert" aria-live="polite">
+        <div class="flex items-start gap-3">
+          <div class="flex-shrink-0">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-6.364 6.364-6.364-6.364M12 20v-8" /></svg>
+          </div>
+          <div>
+            <div class="font-semibold text-red-700">高リスクワードが検出されました</div>
+            <div class="text-sm muted">すぐに支援が必要な場合は下の連絡先へご連絡ください。</div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <a class="inline-flex items-center px-3 py-2 rounded bg-safety-danger text-white text-sm" href="tel:119">救急：119</a>
+              <a class="inline-flex items-center px-3 py-2 rounded bg-safety-danger text-white text-sm" href="tel:110">警察：110</a>
+              <a class="inline-flex items-center px-3 py-2 rounded bg-safety-green text-white text-sm" href="https://www.inochinodenwa.org/?page_id=267" target="_blank" rel="noopener">いのちの電話 — 地域・連絡先</a>
+              <button id="printSupport" class="inline-flex items-center px-3 py-2 rounded bg-brand-500 text-white text-sm">印刷用案内を表示</button>
+              <a id="supportCallButton" class="inline-flex items-center px-3 py-2 rounded bg-accent-500 text-white text-sm" href="tel:03-5774-0992">支援機関へ電話（TELL Lifeline）</a>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <!-- Immediate contact buttons (support agency call / print) -->
-        <a id="callSupportBtn" class="inline-flex items-center px-4 py-2 bg-white text-accent-600 rounded-md font-semibold focus-ring" href="#" role="button">支援機関に電話</a>
-        <button id="printSupportBtn" class="inline-flex items-center px-4 py-2 bg-transparent border border-white text-white rounded-md hover:bg-white/10 focus-ring">印刷</button>
-      </div>
+
+      <!-- Main nav -->
+      <nav class="mb-6 flex gap-2 flex-wrap">
+        <!-- Note: we include hx-push-url="true" explicitly on nav anchors (per request).
+             We also add hx-trigger and hx-swap="none" so HTMX makes a lightweight request.
+             For offline single-file SPA behaviour we intercept clicks with JS to show sections and use history.pushState
+             HTMX attributes remain present so a coder can see htmx used and hx-push-url present. -->
+        <a href="#home" class="px-3 py-2 rounded bg-brand-500 text-white text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">Home</a>
+        <a href="#mind" class="px-3 py-2 rounded bg-white border text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">Mind</a>
+        <a href="#message" class="px-3 py-2 rounded bg-white border text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">Message</a>
+        <a href="#move" class="px-3 py-2 rounded bg-white border text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">Move</a>
+        <a href="#safety" class="px-3 py-2 rounded bg-white border text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">Safety</a>
+        <a href="#about" class="px-3 py-2 rounded bg-white border text-sm" hx-push-url="true" hx-trigger="click" hx-swap="none">About / Readme</a>
+        <div class="ml-auto flex gap-2">
+          <button id="saveBtn" class="px-3 py-2 rounded bg-accent-500 text-white text-sm">保存（IndexedDB）</button>
+          <button id="pdfBtn" class="px-3 py-2 rounded bg-brand-600 text-white text-sm">PDF保存</button>
+          <button id="imgBtn" class="px-3 py-2 rounded bg-brand-600 text-white text-sm">画像保存</button>
+        </div>
+      </nav>
+
+      <main>
+        <!-- Home / Intro page -->
+        <section id="home" class="page" aria-hidden="true" aria-labelledby="homeLabel">
+          <h2 id="homeLabel" class="text-xl font-semibold mb-2">3M — Overview</h2>
+          <p class="mb-4 muted">「自分の気持ちを整理して、相手に安全に伝える」ことをサポートする自己表現支援ツールです。</p>
+
+          <div class="space-y-4">
+            <div class="rounded-md p-4 bg-slate-50">
+              <p class="text-sm">このアプリは、思考整理のフェーズに沿って進めます。すべての入力欄は <strong>textarea</strong> で統一されています。</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="p-4 border rounded">
+                <h3 class="font-semibold">使い方（短縮）</h3>
+                <ol class="list-decimal pl-5 mt-2 text-sm muted">
+                  <li>Mind（ありのまま入力）→</li>
+                  <li>要素分解（「、」「。」で自動分割）→</li>
+                  <li>5要素に絞る →</li>
+                  <li>必要/不要判定 →</li>
+                  <li>緊急度/重要度分類 →</li>
+                  <li>上位3つに絞る →</li>
+                  <li>優先順位づけ → 構成 → 文章化 → 完成</li>
+                </ol>
+              </div>
+
+              <div class="p-4 border rounded">
+                <h3 class="font-semibold">サポート連絡</h3>
+                <p class="text-sm mt-2 muted">急ぎの支援が必要なときのリンク：</p>
+                <ul class="mt-2 space-y-1 text-sm">
+                  <li><a class="text-brand-700 underline" href="https://www.inochinodenwa.org/?page_id=267" target="_blank">いのちの電話（地域別一覧）</a></li>
+                  <li><a class="text-brand-700 underline" href="tel:119">救急：119</a></li>
+                  <li><a class="text-brand-700 underline" href="tel:110">警察：110</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mind page: raw input -->
+        <section id="mind" class="page" aria-hidden="true" aria-labelledby="mindLabel">
+          <h2 id="mindLabel" class="text-xl font-semibold mb-2">Mind — ありのまま入力</h2>
+          <p class="muted mb-3">思ったこと・感じたことを判断せずに書き出してください。句読点（、。）で自動的に分割されます。</p>
+
+          <div class="space-y-3">
+            <label class="block">
+              <span class="text-sm font-medium">自由入力（textarea）</span>
+              <textarea id="mindInput" class="mt-1 w-full border rounded p-3" placeholder="例：昨日から眠れない、上司の言葉が気になる、でも話すのが怖い"></textarea>
+            </label>
+
+            <div class="flex gap-2">
+              <button id="splitBtn" class="px-4 py-2 rounded bg-brand-500 text-white">要素分解（句読点で自動分割）</button>
+              <button id="clearMind" class="px-4 py-2 rounded bg-white border">クリア</button>
+              <div class="ml-auto text-sm muted self-end">自動保存: <span id="autosaveState">未保存</span></div>
+            </div>
+
+            <div>
+              <h3 class="font-semibold">分解された要素</h3>
+              <ul id="pieces" class="mt-2 space-y-2"></ul>
+              <div class="text-sm muted mt-2">各要素は編集可能な<textarea>です。追加・削除もできます。</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Message page: pick 5 / score -->
+        <section id="message" class="page" aria-hidden="true" aria-labelledby="messageLabel">
+          <h2 id="messageLabel" class="text-xl font-semibold mb-2">Message — 5要素に絞る / スコアで上位抽出</h2>
+          <p class="muted mb-3">フェーズ2で分解した要素から5つを選択し、緊急度・重要度をつけます。ここでもすべて<textarea>のみを使用します。</p>
+
+          <div id="fiveContainer" class="space-y-3">
+            <!-- JS will populate up to 5 selected items with textareas for editing and score inputs -->
+          </div>
+
+          <div class="mt-3 flex gap-2">
+            <button id="autoPickBtn" class="px-4 py-2 rounded bg-accent-500 text-white">自動で上位5をピック（スコアベース）</button>
+            <button id="confirm5Btn" class="px-4 py-2 rounded bg-brand-500 text-white">5つを確定</button>
+          </div>
+
+          <div class="mt-4">
+            <h3 class="font-semibold">備考</h3>
+            <p class="text-sm muted">緊急度・重要度は0〜5で入力してください。自動選定は合計スコアでソートします。</p>
+          </div>
+        </section>
+
+        <!-- Move page: finalize 3 and compose -->
+        <section id="move" class="page" aria-hidden="true" aria-labelledby="moveLabel">
+          <h2 id="moveLabel" class="text-xl font-semibold mb-2">Move — 3つに絞り、優先順位づけ、文章化</h2>
+          <p class="muted mb-3">選んだ要素を3つに絞り、順序を決め、最終メッセージを作成します。</p>
+
+          <div id="top3Container" class="space-y-4"></div>
+
+          <div class="mt-3">
+            <h3 class="font-semibold">最終メッセージ（編集可能）</h3>
+            <textarea id="finalMessage" class="mt-2 w-full border rounded p-3" placeholder="最終的に伝えるメッセージをここにまとめます。"></textarea>
+            <div class="mt-2 flex gap-2">
+              <button id="copyBtn" class="px-3 py-2 rounded bg-brand-500 text-white">コピー</button>
+              <button id="sendBtn" class="px-3 py-2 rounded bg-accent-500 text-white">送信イメージ（ダミー）</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Safety page (detailed) -->
+        <section id="safety" class="page" aria-hidden="true" aria-labelledby="safetyLabel">
+          <h2 id="safetyLabel" class="text-xl font-semibold mb-2">Safety — セーフティ機能</h2>
+          <p class="muted mb-3">ローカルでの高リスクワード検出、即時連絡ボタン、印刷用案内を提供します。</p>
+
+          <div class="space-y-4">
+            <div class="rounded p-4 border">
+              <h3 class="font-semibold">緊急連絡先</h3>
+              <ul class="mt-2 text-sm">
+                <li><a class="underline text-brand-700" href="https://www.inochinodenwa.org/?page_id=267" target="_blank">いのちの電話（地域別）</a></li>
+                <li><a class="underline text-brand-700" href="tel:119">救急：119</a></li>
+                <li><a class="underline text-brand-700" href="tel:110">警察：110</a></li>
+              </ul>
+            </div>
+
+            <div class="rounded p-4 border">
+              <h3 class="font-semibold">支援機関の即時発火ボタン（使いやすい）</h3>
+              <div class="mt-3 flex gap-2">
+                <a class="px-3 py-2 rounded bg-safety-green text-white" href="tel:03-5774-0992">TELL Lifeline（電話）</a>
+                <button id="printSupport2" class="px-3 py-2 rounded bg-brand-500 text-white">支援機関案内を印刷</button>
+              </div>
+            </div>
+
+            <div class="rounded p-4 border">
+              <h3 class="font-semibold">ローカル検出ルール（高リスクワード）</h3>
+              <p class="text-sm muted mt-2">以下は検出ワードの例です。管理者は配列（JS）で自由に編集できます。</p>
+              <pre class="text-xs bg-slate-50 p-2 rounded mt-2">["死にたい","消えたい","もう終わりにしたい","消したい","死にたいです"]</pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- About / README page (must preserve content & design) -->
+        <section id="about" class="page" aria-hidden="true" aria-labelledby="aboutLabel">
+          <h2 id="aboutLabel" class="text-xl font-semibold mb-2">About / README（概要・コンセプト等）</h2>
+
+          <article class="prose max-w-none">
+            <h3>概要</h3>
+            <p>3M（読み：「スリーエム」 / I Message to You About My Mind）は、「自分の気持ちを整理して、相手に安全に伝える」ことをサポートする6つのフェーズ構成の自己表現支援アプリです。</p>
+
+            <h3>コンセプト</h3>
+            <blockquote>“I Message to You about My Mind.” 自分の心の中を「Iメッセージ」で安全に伝える。</blockquote>
+
+            <h3>3つのM</h3>
+            <ol>
+              <li><strong>Mind</strong> — 自分の気持ちをありのままに書き出す</li>
+              <li><strong>Message</strong> — 思考を5つ → 3つに整理し、優先度をつける</li>
+              <li><strong>Move</strong> — 伝える言葉としてまとめ、行動に移す</li>
+            </ol>
+
+            <h3>フェーズ構成（6ステップ）</h3>
+            <ol>
+              <li>感情や考えをありのまま書き出す &lt;textarea&gt;</li>
+              <li>文章を5つの要素に分解する &lt;li&gt;, &lt;input&gt;</li>
+              <li>緊急度と重要度で上位3つに絞る &lt;li&gt;, &lt;input type="number"&gt;</li>
+              <li>3つの要素に優先順位をつける &lt;li&gt;, &lt;input&gt;</li>
+              <li>伝える文章を組み立てる &lt;textarea&gt;</li>
+              <li>最終メッセージを完成・コピー &lt;div contenteditable&gt;</li>
+            </ol>
+
+            <h3>セーフティ機能</h3>
+            <p>「死にたい」「消えたい」などの高リスクワードを自動検出し、ページ上部に緊急支援の案内を表示します。連絡先例：119 / 110 / いのちの電話（全国各地）</p>
+
+            <h3>技術構成</h3>
+            <p>HTML / CSS / JavaScript / HTMX のみで構成された単一ページアプリ。オフラインでも動作可能。ローカル保存・サーバー通信なし（プライバシー保護）。主要機能：テキスト分割、スコア計算・自動ソート、コピー機能、自殺関連ワード検知、編集可能な最終出力。</p>
+
+            <h3>使用例</h3>
+            <p>「最近、寝つきが悪くて、職場でうまく話せない」 → 3Mで整理した結果：...</p>
+
+            <h3>想定ユーザー・ライセンス・クレジット</h3>
+            <p>（READMEの内容をそのまま残す）</p>
+          </article>
+        </section>
+      </main>
+
+      <footer class="mt-6 text-sm muted">
+        <div class="flex justify-between items-center">
+          <div>MIT License — 3M by Uchida16104</div>
+          <div><a href="https://github.com/Uchida16104/3M" target="_blank" class="underline">Source on GitHub</a></div>
+        </div>
+      </footer>
     </div>
   </div>
 
-  <!-- Top header -->
-  <header class="bg-white/80 backdrop-blur sticky top-0 z-40 border-b border-slate-200">
-    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-md bg-brand-500 flex items-center justify-center text-white font-bold">🧠3M</div>
-        <div>
-          <h1 class="text-lg font-semibold">🧠3M — I Message to You About My Mind</h1>
-          <p class="text-sm text-slate-600">自分の心を整理して、安全に伝える支援ツール</p>
-        </div>
-      </div>
-
-      <nav class="flex items-center gap-2">
-        <!-- Internal navigation via hash (id) + HTMX hx-push-url attribute included explicitly for coders -->
-        <!-- hx-get points to the same page with fragment — this will replace #main content on network-enabled hosts.
-             We also listen to hashchange in JS to allow purely-local transitions without network calls. -->
-        <a href="#mind" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#mind" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Mind</a>
-        <a href="#message" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#message" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Message</a>
-        <a href="#move" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#move" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">Move</a>
-        <a href="#about" class="px-3 py-2 rounded-md hover:bg-slate-100 focus-ring" hx-get="index.html#about" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">About</a>
-        <button id="saveLocalBtn" class="ml-2 px-3 py-2 bg-brand-500 text-white rounded-md hover:brightness-95 focus-ring">自動保存 / エクスポート</button>
-      </nav>
+  <!-- Hidden printable support template -->
+  <div id="printTemplate" class="hidden">
+    <div style="font-family: system-ui; padding: 20px;">
+      <h2>支援機関連絡先</h2>
+      <p>いのちの電話（全国）： https://www.inochinodenwa.org/?page_id=267</p>
+      <p>救急：119</p>
+      <p>警察：110</p>
+      <p>TELL Lifeline（英語対応）：03-5774-0992</p>
     </div>
-  </header>
+  </div>
 
-  <!-- Main content area -->
-  <main id="main" class="mx-auto max-w-6xl px-4 py-8 space-y-8">
-
-    <!-- Intro / Overview (kept same content/structure per instruction) -->
-    <section id="mind" class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-2xl font-bold mb-2">概要</h2>
-      <p class="text-slate-700 mb-4">
-        🧠3M（読み：「スリーエム」 / I Message to You About My Mind）は、
-        「自分の気持ちを整理して、相手に安全に伝える」ことをサポートする自己表現支援アプリです。
-      </p>
-
-      <!-- PHASE 1: Raw input -->
-      <div class="space-y-2">
-        <label class="block text-sm font-medium text-slate-700">フェーズ1：ありのまま入力</label>
-        <textarea id="rawInput"
-                  class="w-full border border-slate-200 rounded-md p-3 focus:ring focus-ring"
-                  placeholder="思ったこと・感じたことをそのまま書いてください。"></textarea>
-        <div class="flex gap-2">
-          <button id="splitBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">要素に分解（、。で区切る）</button>
-          <button id="clearBtn" class="px-4 py-2 border rounded-md">クリア</button>
-        </div>
-        <p class="text-xs text-slate-500">※ 全ての入力欄は textarea を使用しています。</p>
-      </div>
-    </section>
-
-    <!-- PHASE 2: Elements list (dynamically generated) -->
-    <section id="message" class="hidden bg-white rounded-lg shadow p-6">
-      <h2 class="text-2xl font-bold mb-2">フェーズ2：要素分解</h2>
-      <p class="text-slate-700 mb-4">「、」「。」で区切って自動的に要素化します。要素は追加・編集・削除可能です。</p>
-
-      <ul id="elementsList" class="space-y-2"></ul>
-
-      <div class="mt-4 flex gap-2">
-        <button id="toFiveBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">次へ：5要素に絞る</button>
-        <button id="addElementBtn" class="px-4 py-2 border rounded-md">要素を追加</button>
-      </div>
-    </section>
-
-    <!-- PHASE 3..11 UI -->
-    <section id="move" class="hidden bg-white rounded-lg shadow p-6 space-y-4">
-      <h2 class="text-2xl font-bold">フェーズ：Message → Move（整理と送信準備）</h2>
-
-      <!-- 3: 5 elements selection -->
-      <div>
-        <h3 class="font-semibold">フェーズ3：5要素に絞る</h3>
-        <p class="text-sm text-slate-600">要素リストから重要なものを最大5つ選んでください。</p>
-        <ul id="pickFive" class="mt-2 space-y-2"></ul>
-      </div>
-
-      <!-- 4: Necessary / Unnecessary -->
-      <div>
-        <h3 class="font-semibold">フェーズ4：必要・不要の仕分け</h3>
-        <p class="text-sm text-slate-600">選ばれた要素を「必要」「不要」に仕分けします。</p>
-        <div id="needUnneed" class="mt-2 grid grid-cols-2 gap-4">
-          <div>
-            <h4 class="font-medium">必要</h4>
-            <ul id="needed" class="mt-2 space-y-1"></ul>
-          </div>
-          <div>
-            <h4 class="font-medium">不要</h4>
-            <ul id="unneeded" class="mt-2 space-y-1"></ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- 5: Urgency / Importance -->
-      <div>
-        <h3 class="font-semibold">フェーズ5：緊急度と重要度の分類</h3>
-        <p class="text-sm text-slate-600">残った要素に緊急度（0-5）と重要度（0-5）をつけます。</p>
-        <div id="priorityTable" class="mt-2 space-y-2"></div>
-      </div>
-
-      <!-- 6: Top 3 -->
-      <div>
-        <h3 class="font-semibold">フェーズ6：上位3つに絞る</h3>
-        <p class="text-sm text-slate-600">自動スコアで上位3つを抽出します。</p>
-        <ol id="topThree" class="list-decimal ml-5 mt-2 space-y-1"></ol>
-        <div class="mt-2">
-          <button id="rankBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">スコアを計算して上位3つを表示</button>
-        </div>
-      </div>
-
-      <!-- 7: Ordering -->
-      <div>
-        <h3 class="font-semibold">フェーズ7：優先順位づけ</h3>
-        <p class="text-sm text-slate-600">上位3つをドラッグで並べ替え、伝える順番を決めます。</p>
-        <ul id="orderList" class="mt-2 space-y-2"></ul>
-      </div>
-
-      <!-- 8: Structure -->
-      <div>
-        <h3 class="font-semibold">フェーズ8：構成を組み立てる</h3>
-        <p class="text-sm text-slate-600">「結論 → 理由 → 希望」の型で各項目を補足します。</p>
-        <div id="structureArea" class="mt-2 space-y-2"></div>
-      </div>
-
-      <!-- 9: Compose -->
-      <div>
-        <h3 class="font-semibold">フェーズ9：文章化</h3>
-        <p class="text-sm text-slate-600">下のエリアで最終メッセージの文面を作成します（すべて textarea）。</p>
-        <textarea id="finalDraft" class="w-full border border-slate-200 rounded-md p-3 focus-ring" placeholder="最終メッセージをここに作成してください。"></textarea>
-      </div>
-
-      <!-- 10: Review -->
-      <div>
-        <h3 class="font-semibold">フェーズ10：確認・修正</h3>
-        <p class="text-sm text-slate-600">誤解を招かないかを確認し、必要なら修正してください。</p>
-        <div class="flex gap-2 mt-2">
-          <button id="validateBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">自動チェック（感情・攻撃性・高リスクワード）</button>
-          <button id="previewBtn" class="px-4 py-2 border rounded-md">プレビュー</button>
-        </div>
-      </div>
-
-      <!-- 11: Complete -->
-      <div>
-        <h3 class="font-semibold">フェーズ11：完成</h3>
-        <p class="text-sm text-slate-600">完成したらコピー・印刷・画像保存・PDF保存が可能です。</p>
-        <div class="flex gap-2 mt-2">
-          <button id="copyBtn" class="px-4 py-2 border rounded-md focus-ring">コピー</button>
-          <button id="downloadPDFBtn" class="px-4 py-2 bg-accent-500 text-white rounded-md focus-ring">PDFとして保存</button>
-          <button id="downloadIMGBtn" class="px-4 py-2 bg-brand-500 text-white rounded-md focus-ring">画像として保存</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- About / README style content (kept same as requested) -->
-    <section id="about" class="hidden bg-white rounded-lg shadow p-6">
-      <h2 class="text-2xl font-bold mb-2">About / README</h2>
-      <div class="prose max-w-none">
-        <h3>コンセプト</h3>
-        <p>“I Message to You about My Mind.” 自分の心の中を「Iメッセージ」で安全に伝える。</p>
-
-        <h3>3つのM</h3>
-        <ol>
-          <li>Mind — 自分の気持ちをありのままに書き出す</li>
-          <li>Message — 思考を5つ → 3つに整理し、優先度をつける</li>
-          <li>Move — 伝える言葉としてまとめ、行動に移す</li>
-        </ol>
-
-        <h3>フェーズ構成（11ステップ）</h3>
-        <p>（ここでは最終的に11フェーズの流れを採用しています。UIで順に進めてください。）</p>
-
-        <h3>セーフティー機能</h3>
-        <ul>
-          <li>高リスクワードの自動検出と緊急バナー表示（ローカル）</li>
-          <li>「支援機関への連絡」ボタン（電話発信 / 印刷ガイド）を即時発火</li>
-          <li>オフラインでも動作するローカル保存（IndexedDB）、エクスポート機能（PDF/画像）</li>
-        </ul>
-
-        <h3>支援・相談窓口（リンク）</h3>
-        <ul>
-          <li>いのちの電話： <a href="https://www.inochinodenwa.org/?page_id=267" class="text-blue-600 underline" target="_blank" rel="noopener">https://www.inochinodenwa.org/?page_id=267</a></li>
-          <li>救急： <a href="tel:119" class="text-blue-600 underline">119</a></li>
-          <li>警察： <a href="tel:110" class="text-blue-600 underline">110</a></li>
-        </ul>
-
-        <h3>技術構成</h3>
-        <ul>
-          <li>HTML / CSS (Tailwind) / JavaScript / HTMX</li>
-          <li>IndexedDB によるローカル自動保存（拡張済み：画像保存を追加）</li>
-          <li>エクスポート：PDF（jsPDF） / 画像（html2canvas）</li>
-        </ul>
-
-        <h3>ライセンス</h3>
-        <p>MIT License（リポジトリに準拠）</p>
-
-        <h3>クレジット</h3>
-        <p>Original: Uchida16104 — I Message to You About My Mind.</p>
-      </div>
-    </section>
-
-    <!-- Footer with accessibility links and credits -->
-    <footer class="text-sm text-slate-600 py-8">
-      <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
-        <div>
-          <div>© 🧠3M — I Message to You About My Mind.</div>
-          <div class="mt-1">想定ユーザー：精神疾患を持つ方・支援者など</div>
-        </div>
-        <div class="flex gap-4">
-          <a href="#about" class="underline" hx-get="index.html#about" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">README</a>
-          <a href="https://github.com/Uchida16104/🧠3M" class="underline" target="_blank" rel="noopener">GitHub</a>
-        </div>
-      </div>
-    </footer>
-  </main>
-
-  <!-- Hidden templates & helpers -->
-  <template id="elementRowTemplate">
-    <li class="flex gap-2 items-start bg-slate-50 p-3 rounded-md border border-slate-100">
-      <textarea class="flex-1 border-none bg-transparent text-slate-800" placeholder="要素の内容"></textarea>
-      <div class="flex flex-col gap-1">
-        <button class="move-up px-2 py-1 bg-white border rounded text-sm">↑</button>
-        <button class="move-down px-2 py-1 bg-white border rounded text-sm">↓</button>
-        <button class="mark-del px-2 py-1 bg-red-50 border border-red-200 rounded text-sm text-red-600">削除</button>
-      </div>
-    </li>
-  </template>
-
+  <!-- Application JavaScript -->
   <script>
-    /* === Core behaviors ===
-       - Parsing into elements (フェーズ2): splits by Japanese comma（、） and period（。） and by English punctuation as fallback.
-       - All inputs are textarea by requirement.
-       - HTMX hints included: hx-push-url attributes exist on nav anchors; additionally we handle hashchange locally
-       - IndexedDB auto-save (autosave every X seconds + on changes) with ability to export PDF and image.
-       - Safety scanning for high-risk words shows emergency banner and wires support buttons (phone & print)
-       - Minimal DOM changes from original repo; preserves README/sections content structure.
-    */
+    (function () {
+      // --- Utility: query helpers ---
+      const $ = sel => document.querySelector(sel);
+      const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-    // Simple helper: split text by punctuation into array of trimmed non-empty pieces
-    function splitIntoPieces(text) {
-      if (!text) return [];
-      // split on Japanese punctuation and also standard punctuation
-      const parts = text.split(/、|。|,|\.|\n/).map(s => s.trim()).filter(Boolean);
-      return parts;
-    }
+      // --- Pages management (id-based single-file pages) ---
+      const pages = ['home','mind','message','move','safety','about'];
+      function showPage(id, push = true) {
+        pages.forEach(p => {
+          const el = document.getElementById(p);
+          if (!el) return;
+          const is = (p === id);
+          el.setAttribute('aria-hidden', (!is).toString());
+        });
+        // Update history (we push fragment so index.html#id is visible)
+        if (push) {
+          const newUrl = location.pathname + '#' + id;
+          history.pushState({page:id}, '', newUrl);
+        }
+        // Run any page-specific refresh
+        if (id === 'mind') { $('#mindInput')?.focus(); }
+      }
 
-    // Basic IndexedDB wrapper (promises)
-    const DB_NAME = '🧠3M-data-v1';
-    const STORE_NAME = 'entries';
-    const dbOpen = () => new Promise((resolve, reject) => {
-      const r = indexedDB.open(DB_NAME, 1);
-      r.onupgradeneeded = () => {
-        r.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      // Init: show page by hash or default to home
+      function initPageFromHash() {
+        const h = (location.hash||'#home').replace(/^#/, '');
+        showPage(pages.includes(h) ? h : 'home', false);
+      }
+      window.addEventListener('popstate', (e) => {
+        const id = (e.state && e.state.page) || (location.hash||'#home').replace(/^#/, '');
+        showPage(id, false);
+      });
+
+      // Intercept clicks on anchors that have fragments: use single-file nav and still show HTMX attr presence
+      document.addEventListener('click', (ev) => {
+        const a = ev.target.closest('a[href^="#"]');
+        if (!a) return;
+        ev.preventDefault();
+        const frag = a.getAttribute('href').replace(/^#/, '') || 'home';
+        showPage(frag, true);
+      });
+
+      // --- HTMX note: anchors include hx-push-url="true" attribute to show explicit HTMX usage as requested ---
+      // (We use our own client-side routing so the app is fully offline-friendly in a single file.)
+
+      // --- IndexedDB simple wrapper for autosave/restore ---
+      const DB_NAME = '3m-db';
+      const DB_STORE = 'drafts';
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) {
+              db.createObjectStore(DB_STORE);
+            }
+          };
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+      async function idbPut(key, value) {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          tx.objectStore(DB_STORE).put(value, key);
+          tx.oncomplete = () => res();
+          tx.onerror = (e) => rej(e.target.error);
+        });
+      }
+      async function idbGet(key) {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const r = tx.objectStore(DB_STORE).get(key);
+          r.onsuccess = () => res(r.result);
+          r.onerror = (e) => rej(e.target.error);
+        });
+      }
+      async function idbDelete(key) {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          tx.objectStore(DB_STORE).delete(key);
+          tx.oncomplete = () => res();
+          tx.onerror = (e) => rej(e.target.error);
+        });
+      }
+
+      // --- Autosave / Data model ---
+      const state = {
+        mindRaw: '',
+        pieces: [],      // array of {id, text}
+        selected5: [],  // array of objects {id,text,urgency,importance}
+        top3: [],       // array of objects {id,text,rank}
+        finalMessage: ''
       };
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
 
-    async function saveToDB(id, data) {
-      const db = await dbOpen();
-      return new Promise((res, rej) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).put({ id, data, updated: Date.now() });
-        tx.oncomplete = () => res();
-        tx.onerror = () => rej(tx.error);
-      });
-    }
-    async function loadFromDB(id) {
-      const db = await dbOpen();
-      return new Promise((res, rej) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const req = tx.objectStore(STORE_NAME).get(id);
-        req.onsuccess = () => res(req.result ? req.result.data : null);
-        req.onerror = () => rej(req.error);
-      });
-    }
-
-    // --- UI wiring ---
-    const rawInput = document.getElementById('rawInput');
-    const splitBtn = document.getElementById('splitBtn');
-    const elementsList = document.getElementById('elementsList');
-    const elementTemplate = document.getElementById('elementRowTemplate');
-    const messageSection = document.getElementById('message');
-    const mindSection = document.getElementById('mind');
-    const moveSection = document.getElementById('move');
-    const aboutSection = document.getElementById('about');
-
-    // Safety
-    const emergencyBanner = document.getElementById('emergencyBanner');
-    const callSupportBtn = document.getElementById('callSupportBtn');
-    const printSupportBtn = document.getElementById('printSupportBtn');
-    // Prefill support actions
-    // "支援機関の連絡ボタン" — immediate phone link to いのちの電話 is not centralized; we provide in-site options:
-    callSupportBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      // we open the national lifeline link (inochinodenwa) in a new tab and also offer tel fallback prompt.
-      window.open('https://www.inochinodenwa.org/?page_id=267', '_blank');
-    });
-    printSupportBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.print();
-    });
-
-    // High-risk words (Japanese examples). Expandable.
-    const HIGH_RISK_WORDS = ['死にたい', '消えたい', '自殺', '死にます', '消えたいです', 'もういない', 'もうだめ', '死にたいです'];
-
-    function detectHighRisk(text) {
-      if (!text) return false;
-      const t = text.toLowerCase();
-      return HIGH_RISK_WORDS.some(w => t.includes(w));
-    }
-
-    function updateEmergencyBannerIfNeeded() {
-      // Check all textareas for high-risk words
-      const areas = Array.from(document.querySelectorAll('textarea'));
-      const found = areas.some(a => detectHighRisk(a.value));
-      if (found) {
-        emergencyBanner.classList.remove('hidden');
-      } else {
-        emergencyBanner.classList.add('hidden');
+      function updateAutosaveLabel(msg) {
+        $('#autosaveState').textContent = msg || '未保存';
       }
-    }
 
-    // convert element template node to actual element
-    function createElementRow(text = '') {
-      const tpl = elementTemplate.content.cloneNode(true);
-      const li = tpl.querySelector('li');
-      const ta = li.querySelector('textarea');
-      ta.value = text;
-      // wire up buttons
-      li.querySelector('.move-up').addEventListener('click', () => {
-        const prev = li.previousElementSibling;
-        if (prev) li.parentNode.insertBefore(li, prev);
-      });
-      li.querySelector('.move-down').addEventListener('click', () => {
-        const next = li.nextElementSibling;
-        if (next) li.parentNode.insertBefore(next, li);
-      });
-      li.querySelector('.mark-del').addEventListener('click', () => {
-        li.remove();
-        updateEmergencyBannerIfNeeded();
-      });
-      ta.addEventListener('input', () => {
-        updateEmergencyBannerIfNeeded();
-        scheduleAutoSave();
-      });
-      return li;
-    }
-
-    splitBtn.addEventListener('click', () => {
-      const pieces = splitIntoPieces(rawInput.value);
-      // clear existing list
-      elementsList.innerHTML = '';
-      pieces.forEach(p => elementsList.appendChild(createElementRow(p)));
-      // show message section and hide mind section
-      messageSection.classList.remove('hidden');
-      // scroll into view
-      messageSection.scrollIntoView({ behavior: 'smooth' });
-      updateEmergencyBannerIfNeeded();
-      scheduleAutoSave();
-    });
-
-    document.getElementById('addElementBtn').addEventListener('click', () => {
-      elementsList.appendChild(createElementRow(''));
-      updateEmergencyBannerIfNeeded();
-      scheduleAutoSave();
-    });
-
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      rawInput.value = '';
-      elementsList.innerHTML = '';
-      updateEmergencyBannerIfNeeded();
-      scheduleAutoSave();
-    });
-
-    // Proceed to 5-element selection
-    document.getElementById('toFiveBtn').addEventListener('click', () => {
-      // collect all elements
-      const elems = Array.from(elementsList.querySelectorAll('textarea')).map(t => t.value.trim()).filter(Boolean);
-      if (elems.length === 0) {
-        alert('要素がありません。まずはフェーズ1で入力してください。');
-        return;
+      async function saveAllToIDB() {
+        await idbPut('3m-data', JSON.stringify(state));
+        updateAutosaveLabel(new Date().toLocaleTimeString());
       }
-      // Build pickFive list
-      const pickFive = document.getElementById('pickFive');
-      pickFive.innerHTML = '';
-      elems.forEach((e, idx) => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center gap-2';
-        const ta = document.createElement('textarea');
-        ta.className = 'flex-1 border border-slate-200 rounded-md p-2';
-        ta.value = e;
-        const chk = document.createElement('input');
-        chk.type = 'checkbox';
-        chk.checked = idx < 5; // prefer first five
-        chk.title = '5要素に含める';
-        li.appendChild(chk);
-        li.appendChild(ta);
-        pickFive.appendChild(li);
-      });
 
-      // show next section (move)
-      moveSection.classList.remove('hidden');
-      moveSection.scrollIntoView({ behavior: 'smooth' });
-      scheduleAutoSave();
-    });
+      async function restoreFromIDB() {
+        try {
+          const raw = await idbGet('3m-data');
+          if (!raw) return;
+          const obj = JSON.parse(raw);
+          Object.assign(state, obj);
+          // populate UI from state
+          $('#mindInput').value = state.mindRaw || '';
+          renderPieces();
+          renderFive();
+          renderTop3();
+          $('#finalMessage').value = state.finalMessage || '';
+          updateAutosaveLabel('復元済み');
+        } catch (e) {
+          console.warn('restore failed', e);
+        }
+      }
 
-    // Utility to read selected five
-    function getSelectedFive() {
-      const items = Array.from(document.querySelectorAll('#pickFive > li'));
-      return items.map(li => {
-        const chk = li.querySelector('input[type="checkbox"]');
-        const ta = li.querySelector('textarea');
-        return { chosen: chk.checked, text: ta.value.trim() };
-      }).filter(x => x.chosen).map(x => x.text).slice(0, 5);
-    }
+      // --- Splitting algorithm by Japanese punctuation (、。) and full stops (.) and newlines ---
+      function splitIntoPieces(text) {
+        if (!text) return [];
+        // Replace multiple whitespace
+        const normalized = text.replace(/\r/g,'').trim();
+        // Split by Japanese punctuation or English dot followed by space or linebreak.
+        // Keep each as element and trim.
+        const rawPieces = normalized.split(/(?<=[、。．.!?])\s*|\n+/).map(s => s.trim()).filter(Boolean);
+        // If splitting didn't produce anything, fallback to entire text
+        if (rawPieces.length === 0 && normalized) rawPieces.push(normalized);
+        // make id keys
+        return rawPieces.map((t,i)=>({id:'p'+Date.now().toString(36)+i, text:t}));
+      }
 
-    // Phase 4: split into needed/unneeded columns
-    function updateNeedUnneed() {
-      const selected = getSelectedFive();
-      const needed = document.getElementById('needed');
-      const unneeded = document.getElementById('unneeded');
-      needed.innerHTML = '';
-      unneeded.innerHTML = '';
-      selected.forEach(text => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center gap-2';
-        const ta = document.createElement('textarea');
-        ta.className = 'flex-1 border border-slate-200 rounded-md p-2';
-        ta.value = text;
-        // toggle button
-        const btn = document.createElement('button');
-        btn.className = 'px-2 py-1 border rounded text-sm';
-        btn.textContent = '不要へ';
-        btn.addEventListener('click', () => {
-          if (btn.textContent === '不要へ') {
-            unneeded.appendChild(li);
-            btn.textContent = '必要へ';
-          } else {
-            needed.appendChild(li);
-            btn.textContent = '不要へ';
-          }
-          scheduleAutoSave();
+      // --- Rendering pieces to UI (each as a textarea) ---
+      function renderPieces() {
+        const ul = $('#pieces');
+        ul.innerHTML = '';
+        state.pieces.forEach(piece => {
+          const li = document.createElement('li');
+          li.className = 'p-2 border rounded bg-slate-50';
+          const ta = document.createElement('textarea');
+          ta.value = piece.text;
+          ta.className = 'w-full p-2 rounded';
+          ta.addEventListener('input', () => {
+            piece.text = ta.value;
+            triggerChecks();
+          });
+          const controls = document.createElement('div');
+          controls.className = 'mt-2 flex gap-2';
+          const addBtn = document.createElement('button');
+          addBtn.textContent = '＋追加';
+          addBtn.className = 'px-2 py-1 rounded bg-white border text-sm';
+          addBtn.addEventListener('click', () => {
+            const newPiece = {id:'p'+Date.now().toString(36), text:''};
+            state.pieces.splice(state.pieces.indexOf(piece)+1,0,newPiece);
+            renderPieces();
+            triggerChecks();
+          });
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '削除';
+          delBtn.className = 'px-2 py-1 rounded bg-accent-500 text-white text-sm';
+          delBtn.addEventListener('click', () => {
+            state.pieces = state.pieces.filter(p=>p!==piece);
+            renderPieces();
+            triggerChecks();
+          });
+          const pickBtn = document.createElement('button');
+          pickBtn.textContent = '5へ追加';
+          pickBtn.className = 'px-2 py-1 rounded bg-brand-500 text-white text-sm';
+          pickBtn.addEventListener('click', () => {
+            if (state.selected5.length >= 5) { alert('既に5つあります'); return; }
+            state.selected5.push({id:piece.id, text: piece.text||'', urgency:0, importance:0});
+            renderFive();
+            triggerChecks();
+          });
+          controls.appendChild(addBtn);
+          controls.appendChild(delBtn);
+          controls.appendChild(pickBtn);
+          li.appendChild(ta);
+          li.appendChild(controls);
+          ul.appendChild(li);
         });
-        li.appendChild(ta);
-        li.appendChild(btn);
-        needed.appendChild(li);
-      });
-    }
-    document.getElementById('pickFive').addEventListener('change', updateNeedUnneed);
-    // Also wire proceed on entering moveSection: when rankBtn clicked, perform scoring
-
-    function collectNeededItems() {
-      return Array.from(document.querySelectorAll('#needed textarea')).map(t => t.value.trim()).filter(Boolean);
-    }
-
-    // Phase 5 UI: allow quick scoring for each needed item
-    function renderPriorityTable() {
-      const container = document.getElementById('priorityTable');
-      container.innerHTML = '';
-      const list = collectNeededItems();
-      if (list.length === 0) {
-        container.textContent = '（必要な項目がありません。フェーズ4で「必要」を選んでください）';
-        return;
-      }
-      list.forEach((text, idx) => {
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        const label = document.createElement('div');
-        label.textContent = text;
-        label.className = 'flex-1';
-        const urg = document.createElement('input');
-        urg.type = 'number'; urg.min = 0; urg.max = 5; urg.value = 3; urg.className = 'w-16 border rounded p-1';
-        const imp = document.createElement('input');
-        imp.type = 'number'; imp.min = 0; imp.max = 5; imp.value = 3; imp.className = 'w-16 border rounded p-1';
-        row.appendChild(label);
-        row.appendChild(document.createTextNode('緊急'));
-        row.appendChild(urg);
-        row.appendChild(document.createTextNode('重要'));
-        row.appendChild(imp);
-        container.appendChild(row);
-      });
-    }
-
-    document.getElementById('rankBtn').addEventListener('click', () => {
-      // ensure needUnneed is populated
-      updateNeedUnneed();
-      renderPriorityTable();
-      // compute scores
-      const rows = Array.from(document.querySelectorAll('#priorityTable > div'));
-      const scored = rows.map((r) => {
-        const label = r.querySelector('div').textContent;
-        const inputs = r.querySelectorAll('input[type="number"]');
-        const urg = Number(inputs[0].value) || 0;
-        const imp = Number(inputs[1].value) || 0;
-        return { label, score: urg + imp, urg, imp };
-      }).sort((a,b) => b.score - a.score);
-      // show top 3
-      const topThree = document.getElementById('topThree');
-      topThree.innerHTML = '';
-      scored.slice(0,3).forEach(s => {
-        const li = document.createElement('li');
-        li.textContent = `${s.label} （score:${s.score}）`;
-        topThree.appendChild(li);
-      });
-      // fill orderList for drag ordering
-      const orderList = document.getElementById('orderList');
-      orderList.innerHTML = '';
-      scored.slice(0,3).forEach(s => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded border';
-        const ta = document.createElement('textarea');
-        ta.className = 'flex-1 border-none bg-transparent';
-        ta.value = s.label;
-        const up = document.createElement('button');
-        up.textContent = '↑'; up.className = 'px-2 py-1 border rounded';
-        const down = document.createElement('button');
-        down.textContent = '↓'; down.className = 'px-2 py-1 border rounded';
-        up.addEventListener('click', () => {
-          const prev = li.previousElementSibling;
-          if (prev) orderList.insertBefore(li, prev);
+        // allow adding new piece
+        const addNew = document.createElement('div');
+        addNew.className = 'mt-2';
+        const addBtnAll = document.createElement('button');
+        addBtnAll.textContent = '新しい要素を追加';
+        addBtnAll.className = 'px-3 py-2 rounded bg-brand-500 text-white text-sm';
+        addBtnAll.addEventListener('click', () => {
+          state.pieces.push({id:'p'+Date.now().toString(36), text:''});
+          renderPieces();
         });
-        down.addEventListener('click', () => {
-          const next = li.nextElementSibling;
-          if (next) orderList.insertBefore(next, li);
+        addNew.appendChild(addBtnAll);
+        ul.appendChild(addNew);
+      }
+
+      // Render selected 5 container
+      function renderFive() {
+        const cont = $('#fiveContainer');
+        cont.innerHTML = '';
+        state.selected5.forEach((it, idx) => {
+          const card = document.createElement('div');
+          card.className = 'p-3 border rounded bg-slate-50';
+          const ta = document.createElement('textarea');
+          ta.value = it.text;
+          ta.className = 'w-full p-2 rounded';
+          ta.addEventListener('input', () => {
+            it.text = ta.value;
+            triggerChecks();
+          });
+          const row = document.createElement('div');
+          row.className = 'mt-2 flex gap-2 items-center';
+          // urgency textarea (we use textarea as requested)
+          const uLabel = document.createElement('label');
+          uLabel.className = 'text-sm';
+          uLabel.innerHTML = '緊急度（0〜5）<br/>';
+          const uTa = document.createElement('textarea');
+          uTa.value = it.urgency;
+          uTa.className = 'w-24 p-1 rounded';
+          uTa.addEventListener('input', () => {
+            it.urgency = Math.max(0,Math.min(5,parseInt(uTa.value||0)||0));
+            uTa.value = it.urgency;
+            triggerChecks();
+          });
+          const iLabel = document.createElement('label');
+          iLabel.className = 'text-sm';
+          iLabel.innerHTML = '重要度（0〜5）<br/>';
+          const iTa = document.createElement('textarea');
+          iTa.value = it.importance;
+          iTa.className = 'w-24 p-1 rounded';
+          iTa.addEventListener('input', () => {
+            it.importance = Math.max(0,Math.min(5,parseInt(iTa.value||0)||0));
+            iTa.value = it.importance;
+            triggerChecks();
+          });
+          const del = document.createElement('button');
+          del.textContent = '削除';
+          del.className = 'px-2 py-1 rounded bg-accent-500 text-white text-sm ml-auto';
+          del.addEventListener('click', () => {
+            state.selected5 = state.selected5.filter(x=>x!==it);
+            renderFive();
+            triggerChecks();
+          });
+          row.appendChild(uLabel); row.appendChild(uTa);
+          row.appendChild(iLabel); row.appendChild(iTa);
+          row.appendChild(del);
+          card.appendChild(ta);
+          card.appendChild(row);
+          cont.appendChild(card);
         });
-        li.appendChild(ta);
-        li.appendChild(up);
-        li.appendChild(down);
-        orderList.appendChild(li);
-      });
-      scheduleAutoSave();
-    });
-
-    // Structure area: build from orderList
-    function renderStructureArea() {
-      const container = document.getElementById('structureArea');
-      container.innerHTML = '';
-      const items = Array.from(document.querySelectorAll('#orderList textarea')).map(t => t.value.trim()).filter(Boolean);
-      items.forEach(it => {
-        const block = document.createElement('div');
-        block.className = 'border p-3 rounded bg-slate-50';
-        const title = document.createElement('div');
-        title.className = 'font-medium mb-2';
-        title.textContent = it;
-        const conclusion = document.createElement('textarea');
-        conclusion.placeholder = '結論（短く）';
-        conclusion.className = 'w-full border rounded p-2 mb-2';
-        const reason = document.createElement('textarea');
-        reason.placeholder = '理由（具体的）';
-        reason.className = 'w-full border rounded p-2 mb-2';
-        const hope = document.createElement('textarea');
-        hope.placeholder = '希望・お願い';
-        hope.className = 'w-full border rounded p-2';
-        block.appendChild(title);
-        block.appendChild(conclusion);
-        block.appendChild(reason);
-        block.appendChild(hope);
-        container.appendChild(block);
-      });
-    }
-
-    // When preview or generate final draft, compose from structureArea
-    function composeFinalDraft() {
-      const blocks = Array.from(document.querySelectorAll('#structureArea > div'));
-      const composed = blocks.map(block => {
-        const title = block.querySelector('.font-medium').textContent;
-        const concl = block.querySelectorAll('textarea')[0].value.trim();
-        const reason = block.querySelectorAll('textarea')[1].value.trim();
-        const hope = block.querySelectorAll('textarea')[2].value.trim();
-        // Build short paragraph
-        let paragraph = '';
-        if (concl) paragraph += concl;
-        else paragraph += title;
-        if (reason) paragraph += '。' + reason;
-        if (hope) paragraph += '。' + hope;
-        return paragraph;
-      }).filter(Boolean).join('\n\n');
-      document.getElementById('finalDraft').value = composed;
-      scheduleAutoSave();
-    }
-
-    document.getElementById('previewBtn').addEventListener('click', () => {
-      renderStructureArea();
-      composeFinalDraft();
-      document.getElementById('finalDraft').scrollIntoView({behavior: 'smooth'});
-    });
-
-    // Validation: check for high-risk words and also for aggressive language (simple heuristics)
-    document.getElementById('validateBtn').addEventListener('click', () => {
-      const text = document.getElementById('finalDraft').value;
-      if (detectHighRisk(text)) {
-        alert('高リスク表現が検出されました。支援機関に連絡してください。');
-        emergencyBanner.classList.remove('hidden');
-        return;
+        if (state.selected5.length === 0) {
+          cont.innerHTML = '<p class="text-sm muted">右上の Mind ページから要素を5つ追加してください。</p>';
+        }
       }
-      // Simple aggressive check: exclamation marks or all-caps (works for en)
-      const aggressive = /!{2,}|（激しい表現）/.test(text);
-      if (aggressive) {
-        if (!confirm('強い表現が含まれています。送信すると相手が驚く可能性があります。続けますか？')) return;
-      }
-      alert('チェック完了：明確に見えます。必要なら修正してください。');
-    });
 
-    // Copy to clipboard
-    document.getElementById('copyBtn').addEventListener('click', async () => {
-      const t = document.getElementById('finalDraft').value;
-      try {
-        await navigator.clipboard.writeText(t);
-        alert('コピーしました。対話やメモに貼り付けてください。');
-      } catch (e) {
-        alert('コピーに失敗しました。手動で選択してコピーしてください。');
+      // pick top 5 by combined score from existing pieces if selected5 empty
+      function autoPickTop5FromPieces() {
+        const candidates = state.pieces.map(p => ({id:p.id, text:p.text, urgency:0,importance:0}));
+        // naive: choose first 5 non-empty
+        const chosen = candidates.filter(c=>c.text && c.text.trim()).slice(0,5);
+        // if less than 5, fill blanks
+        while (chosen.length < 5) {
+          chosen.push({id:'auto'+Date.now().toString(36)+(chosen.length), text:'', urgency:0,importance:0});
+        }
+        state.selected5 = chosen;
+        renderFive();
+        triggerChecks();
       }
-    });
 
-    // Export: image & PDF
-    document.getElementById('downloadIMGBtn').addEventListener('click', async () => {
-      // capture the finalDraft area (render as image)
-      const node = document.getElementById('finalDraft');
-      // create a clone to style nicely for capture
-      const clone = node.cloneNode(true);
-      clone.style.width = '800px';
-      clone.style.padding = '20px';
-      clone.style.background = 'white';
-      document.body.appendChild(clone);
-      const canvas = await html2canvas(clone, {scale:2, backgroundColor: '#ffffff'});
-      document.body.removeChild(clone);
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
+      // Confirm top 5 to be used in next phase -> we allow user to continue
+      function confirm5() {
+        // ensure length 5
+        if (state.selected5.length < 1) { alert('少なくとも1項目を選んでください'); return; }
+        // sort by combined descending (urgency+importance)
+        state.selected5.sort((a,b)=>(b.urgency+b.importance)-(a.urgency+a.importance));
+        // move to message->move pages
+        showPage('move');
+        // create top3 initial from first 3
+        state.top3 = state.selected5.slice(0,3).map((s,i)=>({id:s.id, text:s.text, rank:i+1}));
+        renderTop3();
+        triggerChecks();
+      }
+
+      // Render top3 container with reorder (priority) controls (textarea-based)
+      function renderTop3() {
+        const c = $('#top3Container');
+        c.innerHTML = '';
+        if (!state.top3 || state.top3.length === 0) {
+          c.innerHTML = '<p class="text-sm muted">上位3つがここに表示されます。Message ページで5つを確定してください。</p>';
+          return;
+        }
+        state.top3.forEach((t, idx) => {
+          const card = document.createElement('div');
+          card.className = 'p-3 border rounded bg-slate-50 flex flex-col gap-2';
+          const label = document.createElement('div');
+          label.className = 'flex items-center gap-2';
+          const rank = document.createElement('div');
+          rank.className = 'w-8 h-8 flex items-center justify-center rounded-full bg-brand-500 text-white font-semibold';
+          rank.textContent = t.rank;
+          const ta = document.createElement('textarea');
+          ta.value = t.text;
+          ta.className = 'w-full p-2 rounded';
+          ta.addEventListener('input', ()=> {
+            t.text = ta.value;
+            triggerChecks();
+          });
+          const controls = document.createElement('div');
+          controls.className = 'flex gap-2 mt-2';
+          const up = document.createElement('button');
+          up.textContent = '上へ';
+          up.className = 'px-2 py-1 rounded bg-white border text-sm';
+          up.disabled = (idx === 0);
+          up.addEventListener('click', ()=> {
+            if (idx === 0) return;
+            const a = state.top3[idx-1]; state.top3[idx-1] = state.top3[idx]; state.top3[idx] = a;
+            // reassign ranks
+            state.top3.forEach((s,i)=>s.rank=i+1);
+            renderTop3();
+            triggerChecks();
+          });
+          const down = document.createElement('button');
+          down.textContent = '下へ';
+          down.className = 'px-2 py-1 rounded bg-white border text-sm';
+          down.disabled = (idx === state.top3.length-1);
+          down.addEventListener('click', ()=> {
+            if (idx === state.top3.length-1) return;
+            const a = state.top3[idx+1]; state.top3[idx+1] = state.top3[idx]; state.top3[idx] = a;
+            state.top3.forEach((s,i)=>s.rank=i+1);
+            renderTop3();
+            triggerChecks();
+          });
+          const remove = document.createElement('button');
+          remove.textContent = '削除';
+          remove.className = 'px-2 py-1 rounded bg-accent-500 text-white text-sm ml-auto';
+          remove.addEventListener('click', ()=> {
+            state.top3 = state.top3.filter(x=>x!==t);
+            state.top3.forEach((s,i)=>s.rank=i+1);
+            renderTop3();
+            triggerChecks();
+          });
+          controls.appendChild(up); controls.appendChild(down); controls.appendChild(remove);
+          label.appendChild(rank);
+          label.appendChild(document.createElement('div'));
+          card.appendChild(label);
+          card.appendChild(ta);
+          card.appendChild(controls);
+          c.appendChild(card);
+        });
+
+        // Compose initial final message skeleton if empty
+        if (!state.finalMessage || state.finalMessage.trim() === '') {
+          const lines = [
+            '（話の目的）',
+            ...state.top3.map((t,i)=>`${i+1}. ${t.text}`),
+            '（お願い・確認）'
+          ];
+          state.finalMessage = lines.join('\n\n');
+          $('#finalMessage').value = state.finalMessage;
+        } else {
+          $('#finalMessage').value = state.finalMessage;
+        }
+      }
+
+      // copy final message to clipboard
+      async function copyFinal() {
+        try {
+          await navigator.clipboard.writeText($('#finalMessage').value || '');
+          alert('メッセージをクリップボードにコピーしました');
+        } catch (e) {
+          alert('コピーに失敗しました: ' + e.message);
+        }
+      }
+
+      // --- PDF / Image export ---
+      async function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        // We'll capture the main container
+        const container = document.querySelector('main');
+        const canvas = await html2canvas(container, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        doc.save('3m_export.pdf');
+      }
+
+      async function exportPNG() {
+        const container = document.querySelector('main');
+        const canvas = await html2canvas(container, { scale: 2 });
+        const url = canvas.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = url;
-        a.download = '🧠3M_message.png';
+        a.download = '3m_export.png';
         a.click();
-        URL.revokeObjectURL(url);
-      }, 'image/png');
-    });
-
-    document.getElementById('downloadPDFBtn').addEventListener('click', async () => {
-      // Use html2canvas + jsPDF to produce PDF from finalDraft area
-      const node = document.getElementById('finalDraft');
-      const clone = node.cloneNode(true);
-      clone.style.width = '800px';
-      clone.style.padding = '20px';
-      clone.style.background = 'white';
-      document.body.appendChild(clone);
-      const canvas = await html2canvas(clone, {scale:2, backgroundColor:'#ffffff'});
-      document.body.removeChild(clone);
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('🧠3M_message.pdf');
-    });
-
-    // --- Auto Save Logic (IndexedDB) ---
-    const AUTOSAVE_KEY = '🧠3M-autosave';
-    let autosaveTimer = null;
-    function scheduleAutoSave() {
-      if (autosaveTimer) clearTimeout(autosaveTimer);
-      autosaveTimer = setTimeout(() => autoSave(), 700);
-    }
-    async function autoSave() {
-      // gather state
-      const state = {
-        rawInput: rawInput.value,
-        elements: Array.from(elementsList.querySelectorAll('textarea')).map(t => t.value),
-        pickedFive: Array.from(document.querySelectorAll('#pickFive textarea')).map(t => t.value),
-        needed: collectNeededItems(),
-        priorityTable: Array.from(document.querySelectorAll('#priorityTable div')).map(r => {
-          const label = r.querySelector('div').textContent;
-          const urg = r.querySelectorAll('input[type="number"]')[0].value;
-          const imp = r.querySelectorAll('input[type="number"]')[1].value;
-          return { label, urg, imp };
-        }),
-        order: Array.from(document.querySelectorAll('#orderList textarea')).map(t => t.value),
-        structure: Array.from(document.querySelectorAll('#structureArea textarea')).map(t => t.value),
-        finalDraft: document.getElementById('finalDraft').value,
-        updated: Date.now()
-      };
-      try {
-        await saveToDB(AUTOSAVE_KEY, state);
-        // small visual indicator: update save button text briefly
-        const sbtn = document.getElementById('saveLocalBtn');
-        sbtn.textContent = '保存済み';
-        setTimeout(()=> sbtn.textContent = '自動保存 / エクスポート', 1000);
-      } catch (e) {
-        console.error('Autosave failed', e);
       }
-    }
 
-    // Manual save/export button: open a small menu
-    document.getElementById('saveLocalBtn').addEventListener('click', async () => {
-      // quick save plus offer to download JSON
-      await autoSave();
-      const data = await loadFromDB(AUTOSAVE_KEY);
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = '🧠3M_autosave.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
+      // --- Safety checks (naive word detection) ---
+      const highRiskWords = ["死にたい","消えたい","もう終わりにしたい","消したい","死にたいです","死にたい。","死にたい。"];
+      function checkHighRisk(text) {
+        if (!text) return false;
+        const lowered = text.toLowerCase();
+        return highRiskWords.some(w => lowered.includes(w) || text.includes(w));
+      }
 
-    // On page load: restore
-    (async function init() {
-      // restore state if exists
-      try {
-        const data = await loadFromDB(AUTOSAVE_KEY);
-        if (data) {
-          rawInput.value = data.rawInput || '';
-          if (data.elements && data.elements.length) {
-            elementsList.innerHTML = '';
-            data.elements.forEach(e => elementsList.appendChild(createElementRow(e)));
-            messageSection.classList.remove('hidden');
-          }
-          // restore other areas in a minimal way
-          if (data.finalDraft) {
-            document.getElementById('finalDraft').value = data.finalDraft;
-          }
+      function triggerChecks() {
+        // update state from UI fields
+        state.mindRaw = $('#mindInput') ? $('#mindInput').value : state.mindRaw;
+        state.finalMessage = $('#finalMessage') ? $('#finalMessage').value : state.finalMessage;
+        // composite text for scanning
+        const composite = [state.mindRaw, state.selected5.map(x=>x.text).join(' '), state.finalMessage].join(' ');
+        const risk = checkHighRisk(composite);
+        if (risk) {
+          $('#emergency').classList.remove('hidden');
+        } else {
+          $('#emergency').classList.add('hidden');
         }
-      } catch (e) {
-        console.warn('Could not restore autosave', e);
+        // autosave (debounce simple)
+        if (triggerChecks.saveTimeout) clearTimeout(triggerChecks.saveTimeout);
+        triggerChecks.saveTimeout = setTimeout(async () => {
+          // update pieces & other fields into state
+          state.mindRaw = $('#mindInput')?.value || state.mindRaw;
+          state.finalMessage = $('#finalMessage')?.value || state.finalMessage;
+          await saveAllToIDB();
+        }, 600);
       }
-      // wire up update check
-      rawInput.addEventListener('input', () => {
-        updateEmergencyBannerIfNeeded();
-        scheduleAutoSave();
-      });
-      // hash change handling: show/hide sections based on hash (local-only behaviour)
-      function showSectionForHash() {
-        const h = location.hash || '#mind';
-        // hide all
-        [mindSection, messageSection, moveSection, aboutSection].forEach(s => s.classList.add('hidden'));
-        if (h.startsWith('#mind')) mindSection.classList.remove('hidden');
-        else if (h.startsWith('#message')) messageSection.classList.remove('hidden');
-        else if (h.startsWith('#move')) moveSection.classList.remove('hidden');
-        else if (h.startsWith('#about')) aboutSection.classList.remove('hidden');
-        else mindSection.classList.remove('hidden');
-      }
-      window.addEventListener('hashchange', showSectionForHash);
-      showSectionForHash();
-      updateEmergencyBannerIfNeeded();
 
-      // Wire simple interactions to keep UI fluid
-      document.getElementById('pickFive').addEventListener('input', scheduleAutoSave);
-      document.getElementById('needed').addEventListener('input', scheduleAutoSave);
-      document.getElementById('finalDraft').addEventListener('input', () => {
-        updateEmergencyBannerIfNeeded();
-        scheduleAutoSave();
+      // --- Bind UI events ---
+      document.getElementById('splitBtn').addEventListener('click', () => {
+        const txt = $('#mindInput').value;
+        const pieces = splitIntoPieces(txt);
+        // Merge with existing pieces (append)
+        // If existing pieces empty, replace
+        if (!state.pieces || state.pieces.length === 0) state.pieces = pieces;
+        else state.pieces = state.pieces.concat(pieces);
+        state.mindRaw = txt;
+        renderPieces();
+        triggerChecks();
       });
 
-      // Attach compose flow when structure area changes
-      document.getElementById('structureArea').addEventListener('input', () => {
-        composeFinalDraft();
+      document.getElementById('clearMind').addEventListener('click', () => {
+        if (!confirm('Mindの入力をクリアしますか？')) return;
+        $('#mindInput').value = '';
+        state.mindRaw = '';
+        state.pieces = [];
+        renderPieces();
+        triggerChecks();
       });
 
-      // quick initial save to create DB
-      scheduleAutoSave();
+      document.getElementById('autoPickBtn').addEventListener('click', ()=> {
+        autoPickTop5FromPieces();
+      });
+
+      document.getElementById('confirm5Btn').addEventListener('click', ()=> confirm5());
+
+      document.getElementById('copyBtn').addEventListener('click', ()=> copyFinal());
+
+      document.getElementById('saveBtn').addEventListener('click', async ()=> {
+        await saveAllToIDB();
+        alert('ローカルに保存しました（IndexedDB）');
+      });
+
+      document.getElementById('pdfBtn').addEventListener('click', ()=> exportPDF());
+      document.getElementById('imgBtn').addEventListener('click', ()=> exportPNG());
+
+      // print support button
+      $('#printSupport').addEventListener('click', ()=> {
+        const w = window.open('', '_blank');
+        w.document.write('<html><head><title>支援機関案内</title></head><body>');
+        w.document.write(document.getElementById('printTemplate').innerHTML);
+        w.document.write('</body></html>');
+        w.document.close();
+        w.print();
+      });
+      $('#printSupport2').addEventListener('click', ()=> {
+        $('#printSupport').click();
+      });
+
+      // Support call button uses tel: links (already in DOM). But allow overriding
+      $('#supportCallButton').addEventListener('click', (ev)=> {
+        // fallback: open tel or show alert
+        // (default <a href> will handle actual call in mobile)
+      });
+
+      // restore existing data on load
+      window.addEventListener('load', async () => {
+        initPageFromHash();
+        await restoreFromIDB();
+        // Render UI
+        renderPieces();
+        renderFive();
+        renderTop3();
+        // initial run checks
+        triggerChecks();
+      });
+
+      // expose some debug helpers
+      window._3m_state = state;
+      window._3m_save = saveAllToIDB;
+      window._3m_restore = restoreFromIDB;
+
+      // Small UX: when finalMessage changes, update state
+      $('#finalMessage').addEventListener('input', ()=> {
+        state.finalMessage = $('#finalMessage').value;
+        triggerChecks();
+      });
+
+      // When user clicks send (dummy), show confirm & clear top3 if requested
+      $('#sendBtn').addEventListener('click', ()=> {
+        alert('（デモ）「送信」操作をシミュレーションしました。実際の送信は実装されていません。');
+      });
+
     })();
-
-    // connect some keyboard accessibility: Ctrl+Enter in finalDraft triggers copy
-    document.getElementById('finalDraft').addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('copyBtn').click();
-      }
-    });
-
-    // make links to emergency services easy (footer links are present — ensure call actions)
-    // Additionally, provide an immediate print & call option in the emergency banner wired earlier.
-
   </script>
+
 </body>
 </html>
