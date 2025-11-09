@@ -68,15 +68,14 @@
     <p class="small">思ったことをそのまま書き出します（長文可）。</p>
     <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
     <div style="margin-top:10px">
-      <!-- hx-push-url は要件どおり付与。実際の表示は JS の navigatePhase で行う -->
-      <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">5つに分解する → フェーズ2</button>
+      <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">句点で分解する → フェーズ2</button>
     </div>
   </section>
 
   <!-- フェーズ2 -->
   <section class="card hidden" id="phase2">
-    <h2>フェーズ2 — 5つの要素に分解</h2>
-    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
+    <h2>フェーズ2 — 句点（。）で分解（テキストエリア・上限なし）</h2>
+    <p class="small">入力を「。」で分割して、各要素を<textarea>で編集できます。要素の追加・削除は自由です（個数の上限なし）。</p>
     <ul id="elementsList"></ul>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="backTo1" class="secondary" hx-push-url="true" data-phase="phase1">戻る</button>
@@ -87,7 +86,7 @@
   <!-- フェーズ3 -->
   <section class="card hidden" id="phase3">
     <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
-    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
+    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つを選びます。ピン留めで必ず残すこともできます。</p>
     <ul id="priorityList"></ul>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="backTo2" class="secondary" hx-push-url="true" data-phase="phase2">戻る</button>
@@ -134,7 +133,6 @@
       <button id="copyBtn">コピー</button>
       <button id="editBtn" class="secondary">編集する</button>
       <button id="resetBtn" class="secondary">最初からやり直す</button>
-      <!-- PDFボタンはスクリプトで生成して追加（動的ロード対応） -->
     </div>
   </section>
 
@@ -143,18 +141,16 @@
     const qs = sel => document.querySelector(sel);
     const qsa = sel => Array.from(document.querySelectorAll(sel));
 
-    // phases 定義（showPhase 内で参照していた未定義の変数を修正）
+    // phases 定義
     const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
 
-    // --- フェーズ表示制御（HTMX 履歴 push を利用） ---
+    // --- フェーズ表示制御 ---
     function showPhase(phaseId, options = {}) {
-      // hide all phase sections and show the requested one.
       qsa('section[id^="phase"]').forEach(s => {
         if (s.id === phaseId) s.classList.remove('hidden');
         else s.classList.add('hidden');
       });
 
-      // update fragment using htmx API if available, otherwise fallback to history API
       const frag = '#' + phaseId;
       try {
         if (window.htmx && typeof htmx.pushUrl === 'function') {
@@ -172,18 +168,15 @@
       const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
       const label = qs('#progressLabel'); if(label) label.textContent = `フェーズ ${idx+1} / ${total}`;
 
-      // optional callback after showing
       if (options && typeof options.after === 'function') options.after();
     }
 
-    // On load, if fragment present, show that phase. Default to phase1.
     (function initPhaseFromFragment(){
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       const valid = !!qs('#' + frag);
       showPhase(valid ? frag : 'phase1');
     })();
 
-    // Attach all buttons that have data-phase to navigate via showPhase
     qsa('button[data-phase]').forEach(btn=>{
       btn.addEventListener('click', (ev)=>{
         ev && ev.preventDefault && ev.preventDefault();
@@ -193,40 +186,33 @@
       });
     });
 
-    // --- テキスト分割ユーティリティ（既存ロジックを尊重） ---
-    function splitIntoPieces(text, maxPieces){
-      if(!text) return Array.from({length:maxPieces},()=>"");
-      // まず行で分割
-      let pieces = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-      // さらに文末句読点で分割（日本語・英語対応）
-      pieces = pieces.flatMap(p => p.split(/(?<=[。．.!?？])\s*/));
-      pieces = pieces.map(s=>s.trim()).filter(Boolean);
-      // If still more than maxPieces, join short ones
-      if(pieces.length > maxPieces){
-        while(pieces.length > maxPieces){
-          let a = pieces.splice(pieces.length-2,2).join(' ');
-          pieces.push(a);
-        }
-      }
-      // pad
-      while(pieces.length < maxPieces) pieces.push("");
-      return pieces.slice(0,maxPieces);
+    // --- テキスト分割ユーティリティ（句点（。）で分割、上限なし） ---
+    function splitIntoPiecesByKuten(text){
+      if(!text) return [];
+      // split by full stop '。' — keep content before each '。' as element
+      // Also handle trailing fragment without '。'
+      const parts = text.split('。').map(s=>s.trim()).filter(Boolean);
+      return parts;
     }
 
     function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // --- フェーズ1 -> フェーズ2 動作（既存機能保持） ---
+    // --- フェーズ1 -> フェーズ2 動作（textarea・無制限） ---
     qs('#toPhase2').addEventListener('click', ()=>{
       const raw = qs('#rawText').value.trim();
-      const arr = splitIntoPieces(raw,5);
+      const arr = splitIntoPiecesByKuten(raw);
       const ul = qs('#elementsList'); ul.innerHTML = '';
+
+      // If no pieces found, show one empty textarea so user can start
+      if(arr.length === 0) arr.push('');
+
       arr.forEach((t,i)=>{
         const li = document.createElement('li');
         li.className = 'item';
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" />
+            <textarea rows="3" class="elementTextarea" data-index="${i}"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
@@ -234,51 +220,50 @@
           </div>
         `;
         ul.appendChild(li);
-        // assign value safely (avoid double-escaping in attribute)
-        const input = li.querySelector('.elementInput'); if(input) input.value = t;
+        const ta = li.querySelector('.elementTextarea'); if(ta) ta.value = t;
       });
       showPhase('phase2');
     });
 
     qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
 
-    // allow add/delete element fields (フェーズ2 内)
+    // allow add/delete element fields (フェーズ2 内) — event delegation
     qs('#elementsList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.index);
-      const inputs = qsa('.elementInput').map(x=>x.value);
-      if(action==='add') inputs.splice(idx+1,0,'');
-      if(action==='del') inputs.splice(idx,1);
-      // normalize to 5 slots
-      while(inputs.length < 5) inputs.push('');
-      while(inputs.length > 5) inputs.pop();
-      // rebuild
+      const list = qsa('.elementTextarea').map(x=>x.value);
+      if(action==='add') list.splice(idx+1,0,'');
+      if(action==='del') list.splice(idx,1);
+      // rebuild from list (no fixed limit)
+      if(list.length === 0) list.push('');
       const ul = qs('#elementsList'); ul.innerHTML='';
-      inputs.forEach((t,i)=>{
+      list.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item'; li.innerHTML=`
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" />
+            <textarea rows="3" class="elementTextarea" data-index="${i}"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
             <button class="secondary" data-action="del" data-index="${i}">－</button>
           </div>`;
         ul.appendChild(li);
-        const input = li.querySelector('.elementInput'); if(input) input.value = t;
+        const ta = li.querySelector('.elementTextarea'); if(ta) ta.value = t;
       });
     });
 
     // Phase2 -> Phase3
     qs('#toPhase3').addEventListener('click', ()=>{
-      const full = qsa('.elementInput').map(i=>i.value.trim());
-      const ul = qs('#priorityList'); ul.innerHTML='';
-      full.forEach((t,i)=>{
+      const full = qsa('.elementTextarea').map(i=>i.value.trim()).filter(Boolean);
+      // If user left textareas empty but exists, include empties as blanks so they can fill in phase3
+      const rawAll = qsa('.elementTextarea').map(i=>i.value);
+      const ul = qs('#priorityList'); ul.innerHTML = '';
+      rawAll.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item';
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" class="ptext" data-i="${i}" />
+            <textarea rows="2" class="ptext" data-i="${i}"></textarea>
           </div>
           <div style="width:220px">
             <label class="small">緊急性 (0-5)</label>
@@ -299,19 +284,27 @@
     // Phase3 -> Phase4 (select top3)
     qs('#toPhase4').addEventListener('click', ()=>{
       const items = qsa('#priorityList .item').map(li=>{
-        const text = li.querySelector('.ptext').value.trim();
-        const urg = Number(li.querySelector('.urg').value)||0;
-        const imp = Number(li.querySelector('.imp').value)||0;
-        const pin = li.querySelector('.pin').checked;
+        const text = (li.querySelector('.ptext') && li.querySelector('.ptext').value) ? li.querySelector('.ptext').value.trim() : '';
+        const urgEl = li.querySelector('.urg');
+        const impEl = li.querySelector('.imp');
+        const urg = urgEl ? (Number(urgEl.value)||0) : 0;
+        const imp = impEl ? (Number(impEl.value)||0) : 0;
+        const pin = li.querySelector('.pin') ? li.querySelector('.pin').checked : false;
         return {text,urg,imp,pin,score:urg+imp};
-      }).filter(x=>x.text);
-      if(items.length===0){ alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。'); return; }
+      }).filter(x=>x.text || x.pin);
+
+      if(items.length===0){ alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。'); showPhase('phase2'); return; }
+
+      // sort by score then importance
       items.sort((a,b)=> (b.score - a.score) || (b.imp - a.imp));
+      // ensure pinned items are included
       const pinned = items.filter(i=>i.pin);
       let top = items.slice(0,3);
-      pinned.forEach(p=>{ if(!top.includes(p)) { top.pop(); top.push(p); } });
-      top = Array.from(new Set(top)).slice(0,3);
-      while(top.length<3) top.push({text:'',urg:0,imp:0,score:0});
+      pinned.forEach(p=>{ if(!top.includes(p)) { if(top.length<3) top.push(p); else { top.pop(); top.push(p); } } });
+      // dedupe and ensure length 3
+      top = Array.from(new Set(top));
+      while(top.length < 3) top.push({text:'',urg:0,imp:0,score:0});
+      top = top.slice(0,3);
 
       const ul = qs('#orderedList'); ul.innerHTML='';
       top.forEach((it,idx)=>{
@@ -380,17 +373,18 @@
 
     // Phase5 -> Phase6
     qs('#toPhase6').addEventListener('click', ()=>{
-      const intro = qs('#intro').value.trim();
-      const closing = qs('#closing').value.trim();
+      const intro = qs('#intro') ? qs('#intro').value.trim() : '';
+      const closing = qs('#closing') ? qs('#closing').value.trim() : '';
       const pieces = qsa('.finalPiece').map(t=>t.value.trim()).filter(Boolean);
       const final = buildFinalMessage(intro,pieces,closing);
-      qs('#finalMessage').textContent = final;
+      const fm = qs('#finalMessage'); if(fm) fm.textContent = final;
       showPhase('phase6');
     });
 
     // copy
     qs('#copyBtn').addEventListener('click', ()=>{
-      const txt = qs('#finalMessage').textContent;
+      const el = qs('#finalMessage'); const txt = el ? el.textContent : '';
+      if(!txt) { alert('コピーするテキストがありません。'); return; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(()=> alert('文章をコピーしました。'), ()=> alert('コピーに失敗しました。'));
       } else {
@@ -402,7 +396,7 @@
         document.body.removeChild(ta);
       }
     });
-    qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
+    qs('#editBtn').addEventListener('click', ()=>{ const fm = qs('#finalMessage'); if(fm) { fm.contentEditable = true; fm.focus(); } });
     qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) { location.hash = '#phase1'; showPhase('phase1'); } });
 
     // helpers
@@ -454,7 +448,7 @@
         pdfBtn.textContent = '🖨️ PDFとして保存';
         pdfBtn.style.marginLeft = '8px';
         pdfBtn.id = 'pdfBtn';
-        const controls = qs('#phase6').querySelector('div[style*="gap:8px"]');
+        const controls = qs('#phase6') ? qs('#phase6').querySelector('div[style*="gap:8px"]') : null;
         if (controls) controls.appendChild(pdfBtn);
 
         async function loadScript(src){
@@ -485,7 +479,6 @@
 
             if(!(window.html2canvas && (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF))))) throw new Error('PDF libraries not available');
 
-            // prepare a printable card
             const card = document.createElement('div');
             card.style.padding = '20px';
             card.style.background = 'white';
@@ -504,7 +497,6 @@
             const canvas = await window.html2canvas(card, {scale:2});
             const imgData = canvas.toDataURL('image/png');
 
-            // use the available jsPDF constructor
             const jsPDFConstructor = (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF)));
             const pdf = new jsPDFConstructor({orientation:'p', unit:'px', format:'a4'});
             const pageWidth = pdf.internal.pageSize.getWidth();
@@ -534,11 +526,6 @@
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       if (qs('#' + frag)) showPhase(frag);
     }, false);
-
-    // Safety: ensure navigation via links with hx-push-url true also triggers our showPhase when user clicks anchor or buttons using htmx events
-    document.body.addEventListener('htmx:beforeRequest', function(evt){
-      // no-op but reserved for future enhancements
-    });
 
   </script>
 </body>
