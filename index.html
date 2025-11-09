@@ -43,12 +43,19 @@
       background: #2980b9;
       color: white;
     }
+    .progressWrap { margin-top:10px; height:10px; background:#e6eef8; border-radius:999px; overflow:hidden; }
+    .progressBar { height:100%; width:0%; background:linear-gradient(90deg,#1565d8,#4fc3f7); transition:width .25s ease; }
+    .progressLabel { font-size:12px; color:#666; margin-top:6px; }
   </style>
 </head>
 <body>
   <h1>🧠 3M — I Message to You About My Mind.</h1>
   <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
-
+  <!-- プログレス（フェーズの進捗表示） -->
+  <div id="progressContainer" class="card" style="padding:10px 14px;margin-top:6px;">
+    <div class="progressWrap" aria-hidden="true"><div id="progressBar" class="progressBar"></div></div>
+    <div id="progressLabel" class="progressLabel">Phase 1 / 6</div>
+  </div>
   <!-- フェーズ1 -->
   <section class="card" id="phase1">
     <h2>フェーズ1 — ありのまま入力</h2>
@@ -153,6 +160,12 @@
         try { history.replaceState(null, '', location.pathname + frag); } catch (_){}
       }
 
+      const idx = phases.indexOf(phaseId);
+      const total = phases.length;
+      const pct = Math.round(((idx+1) / total) * 100);
+      const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
+      const label = qs('#progressLabel'); if(label) label.textContent = `Phase ${idx+1} / ${total}`;
+      
       // optional callback after showing
       if (options && typeof options.after === 'function') options.after();
     }
