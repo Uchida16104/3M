@@ -511,9 +511,28 @@
             const imgWidth = pageWidth - 40;
             const imgHeight = canvas.height * imgWidth / canvas.width;
 
-            pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
-            pdf.save('3M_Message.pdf');
+            const now = new Date();
 
+            const options = {
+              timeZone: "Asia/Tokyo",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit"
+            };
+
+            const formatted = new Intl.DateTimeFormat("ja-JP", options)
+              .format(now)
+              .replace(/\//g, "-")
+              .replace(",", "")
+              .replace(" ", "_")
+              .replace(/:/g, "-");
+            
+            pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+            pdf.save('3M_Message_'+formatted+'.pdf');
+            pdf.save('3M_Message_'+formatted+'png');
             document.body.removeChild(card);
             pdfBtn.textContent = prev;
             pdfBtn.disabled = false;
