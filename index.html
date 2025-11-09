@@ -21,7 +21,7 @@
     p.lead{margin-top:0;color:#444}
     textarea,input[type=text]{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccd;border-radius:8px}
     .card{background:white;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 6px 18px rgba(20,30,60,0.06)}
-    ul{padding-left:18px}
+    ul{padding-left:18px; list-style: none; margin:0;}
     .row{display:flex;gap:10px}
     .col{flex:1}
     button, a.button{background:#1565d8;color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
@@ -52,6 +52,9 @@
     .progressWrap { margin-top:10px; height:10px; background:#e6eef8; border-radius:999px; overflow:hidden; }
     .progressBar { height:100%; width:0%; background:linear-gradient(90deg,#1565d8,#4fc3f7); transition:width .25s ease; }
     .progressLabel { font-size:12px; color:#666; margin-top:6px; }
+    .controls button { padding:6px 8px; border-radius:6px; font-size:13px; }
+    .elementTextarea { min-height:56px; resize:vertical; }
+    .finalPiece { min-height:48px; resize:vertical; }
   </style>
 </head>
 <body>
@@ -68,29 +71,30 @@
     <p class="small">思ったことをそのまま書き出します（長文可）。</p>
     <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
     <div style="margin-top:10px">
+      <!-- hx-push-url は要件どおり付与。実際の表示は JS の navigatePhase で行う -->
       <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">句点で分解する → フェーズ2</button>
     </div>
   </section>
 
   <!-- フェーズ2 -->
   <section class="card hidden" id="phase2">
-    <h2>フェーズ2 — 句点（。）で分解（テキストエリア・上限なし）</h2>
-    <p class="small">入力を「。」で分割して、各要素を<textarea>で編集できます。要素の追加・削除は自由です（個数の上限なし）。</p>
+    <h2>フェーズ2 — 句点（。）で分解（上限なし）</h2>
+    <p class="small">入力を「。（句点）」で分割し、各要素を編集できます。要素は<textarea>です。必要に応じて追加・削除してください。</p>
     <ul id="elementsList"></ul>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="backTo1" class="secondary" hx-push-url="true" data-phase="phase1">戻る</button>
-      <button id="toPhase3" hx-push-url="true" data-phase="phase3" class="btn-next">優先度チェック → フェーズ3</button>
+      <button id="toPhase3" hx-push-url="true" data-phase="phase3" class="btn-next">緊急度チェック → フェーズ3</button>
     </div>
   </section>
 
   <!-- フェーズ3 -->
   <section class="card hidden" id="phase3">
-    <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
-    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つを選びます。ピン留めで必ず残すこともできます。</p>
+    <h2>フェーズ3 — 緊急度と重要度で上位3つに絞る</h2>
+    <p class="small">フェーズ2の全要素（上限なし）を反映します。緊急性・重要性の合計スコアで上位3つを自動選出できます。ピン留めで必ず残すことも可能です。</p>
     <ul id="priorityList"></ul>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="backTo2" class="secondary" hx-push-url="true" data-phase="phase2">戻る</button>
-      <button id="toPhase4" hx-push-url="true" data-phase="phase4" class="btn-next">3つに絞る → フェーズ4</button>
+      <button id="toPhase4" hx-push-url="true" data-phase="phase4" class="btn-next">上位3つを選ぶ → フェーズ4</button>
     </div>
   </section>
 
@@ -133,6 +137,7 @@
       <button id="copyBtn">コピー</button>
       <button id="editBtn" class="secondary">編集する</button>
       <button id="resetBtn" class="secondary">最初からやり直す</button>
+      <!-- PDFボタンはスクリプトで生成して追加（動的ロード対応） -->
     </div>
   </section>
 
@@ -144,13 +149,12 @@
     // phases 定義
     const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
 
-    // --- フェーズ表示制御 ---
+    // --- フェーズ表示制御（HTMX 履歴 push を利用） ---
     function showPhase(phaseId, options = {}) {
       qsa('section[id^="phase"]').forEach(s => {
         if (s.id === phaseId) s.classList.remove('hidden');
         else s.classList.add('hidden');
       });
-
       const frag = '#' + phaseId;
       try {
         if (window.htmx && typeof htmx.pushUrl === 'function') {
@@ -161,22 +165,22 @@
       } catch (e) {
         try { history.replaceState(null, '', location.pathname + frag); } catch (_){ }
       }
-
       const idx = phases.indexOf(phaseId);
       const total = phases.length;
       const pct = Math.round(((idx+1) / total) * 100);
       const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
       const label = qs('#progressLabel'); if(label) label.textContent = `フェーズ ${idx+1} / ${total}`;
-
       if (options && typeof options.after === 'function') options.after();
     }
 
+    // On load, fragment -> phase
     (function initPhaseFromFragment(){
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       const valid = !!qs('#' + frag);
       showPhase(valid ? frag : 'phase1');
     })();
 
+    // Attach buttons with data-phase
     qsa('button[data-phase]').forEach(btn=>{
       btn.addEventListener('click', (ev)=>{
         ev && ev.preventDefault && ev.preventDefault();
@@ -186,94 +190,106 @@
       });
     });
 
-    // --- テキスト分割ユーティリティ（句点（。）で分割、上限なし） ---
+    // --- テキスト分割ユーティリティ（句点で分割、上限なし） ---
     function splitIntoPiecesByKuten(text){
       if(!text) return [];
-      // split by full stop '。' — keep content before each '。' as element
-      // Also handle trailing fragment without '。'
-      const parts = text.split('。').map(s=>s.trim()).filter(Boolean);
+      // 正規化：全角スペースや改行を扱う
+      const trimmed = text.trim();
+      // split by Japanese full stop '。' but keep trailing punctuation removed; also consider English .!? and newlines
+      // First, replace \r\n with \n
+      let t = trimmed.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+      // split on '。' and also on English sentence terminators
+      let parts = t.split(/。+/).map(s=>s.trim()).filter(Boolean);
+      // If still contains sentences separated by English punctuation, further split
+      parts = parts.flatMap(p => p.split(/(?<=[.!?？])\s*/).map(s=>s.trim()).filter(Boolean));
       return parts;
     }
 
     function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // --- フェーズ1 -> フェーズ2 動作（textarea・無制限） ---
+    // --- フェーズ1 -> フェーズ2 ---
     qs('#toPhase2').addEventListener('click', ()=>{
-      const raw = qs('#rawText').value.trim();
+      const raw = qs('#rawText').value || '';
       const arr = splitIntoPiecesByKuten(raw);
-      const ul = qs('#elementsList'); ul.innerHTML = '';
-
-      // If no pieces found, show one empty textarea so user can start
-      if(arr.length === 0) arr.push('');
-
-      arr.forEach((t,i)=>{
-        const li = document.createElement('li');
-        li.className = 'item';
-        li.innerHTML = `
-          <div style="flex:1">
-            <label class="small">要素 ${i+1}</label>
-            <textarea rows="3" class="elementTextarea" data-index="${i}"></textarea>
-          </div>
-          <div class="controls">
-            <button class="secondary" data-action="add" data-index="${i}">＋</button>
-            <button class="secondary" data-action="del" data-index="${i}">－</button>
-          </div>
-        `;
-        ul.appendChild(li);
-        const ta = li.querySelector('.elementTextarea'); if(ta) ta.value = t;
-      });
+      // if no split results, fallback to whole text as one piece (if not empty)
+      const pieces = arr.length ? arr : (raw.trim() ? [raw.trim()] : []);
+      renderElementsList(pieces);
       showPhase('phase2');
     });
 
     qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
 
-    // allow add/delete element fields (フェーズ2 内) — event delegation
-    qs('#elementsList').addEventListener('click', (ev)=>{
-      const b = ev.target.closest('button'); if(!b) return;
-      const action = b.dataset.action; const idx = Number(b.dataset.index);
-      const list = qsa('.elementTextarea').map(x=>x.value);
-      if(action==='add') list.splice(idx+1,0,'');
-      if(action==='del') list.splice(idx,1);
-      // rebuild from list (no fixed limit)
-      if(list.length === 0) list.push('');
-      const ul = qs('#elementsList'); ul.innerHTML='';
-      list.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item'; li.innerHTML=`
+    // Render elements list (フェーズ2) — textarea per element
+    function renderElementsList(values){
+      const ul = qs('#elementsList');
+      ul.innerHTML = '';
+      // ensure at least one empty row if no values
+      const base = (values && values.length) ? values.slice() : [''];
+      base.forEach((t,i)=>{
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <textarea rows="3" class="elementTextarea" data-index="${i}"></textarea>
+            <textarea class="elementTextarea" data-index="${i}" rows="3" placeholder="ここに要素を入力"></textarea>
           </div>
           <div class="controls">
-            <button class="secondary" data-action="add" data-index="${i}">＋</button>
-            <button class="secondary" data-action="del" data-index="${i}">－</button>
-          </div>`;
+            <button class="" data-action="add" data-index="${i}">＋ 要素追加</button>
+            <button class="" data-action="del" data-index="${i}">－ 要素削除</button>
+          </div>
+        `;
         ul.appendChild(li);
         const ta = li.querySelector('.elementTextarea'); if(ta) ta.value = t;
       });
+    }
+
+    // add/delete handling in elementsList (フェーズ2)
+    qs('#elementsList').addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button'); if(!b) return;
+      const action = b.dataset.action; const idx = Number(b.dataset.index);
+      const textareas = qsa('.elementTextarea').map(x=>x.value);
+      if(action==='add'){
+        // insert after idx
+        textareas.splice(idx+1,0,'');
+      } else if(action==='del'){
+        if(textareas.length <= 1){
+          // clear instead of removing last
+          textareas[0] = '';
+        } else {
+          textareas.splice(idx,1);
+        }
+      }
+      renderElementsList(textareas);
     });
 
-    // Phase2 -> Phase3
+    // allow direct drag/typing - nothing special required, value read when moving forward
+
+    // Phase2 -> Phase3: build priority list from all elementTextarea values
     qs('#toPhase3').addEventListener('click', ()=>{
-      const full = qsa('.elementTextarea').map(i=>i.value.trim()).filter(Boolean);
-      // If user left textareas empty but exists, include empties as blanks so they can fill in phase3
-      const rawAll = qsa('.elementTextarea').map(i=>i.value);
-      const ul = qs('#priorityList'); ul.innerHTML = '';
-      rawAll.forEach((t,i)=>{
+      const full = qsa('.elementTextarea').map(i=>i.value.trim()).filter(Boolean); // ignore empty elements
+      const ul = qs('#priorityList');
+      ul.innerHTML = '';
+      if(full.length===0){
+        // if all empty, allow user to proceed with an empty single element to edit
+        full.push('');
+      }
+      full.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item';
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <textarea rows="2" class="ptext" data-i="${i}"></textarea>
+            <textarea class="ptext" data-i="${i}" rows="2" placeholder="要素を編集">${escapeHtml(t)}</textarea>
           </div>
           <div style="width:220px">
             <label class="small">緊急性 (0-5)</label>
             <input type="number" class="urg" min="0" max="5" value="0" />
             <label class="small">重要性 (0-5)</label>
             <input type="number" class="imp" min="0" max="5" value="0" />
-            <div style="margin-top:6px"><input type="checkbox" class="pin" /> ピン留め（必ず残す）</div>
+            <div style="margin-top:6px"><label><input type="checkbox" class="pin" /> ピン留め（必ず残す）</label></div>
           </div>
         `;
         ul.appendChild(li);
+        // set textarea value safely (we used escapeHtml in innerHTML to avoid injection)
         const textInput = li.querySelector('.ptext'); if(textInput) textInput.value = t;
       });
       showPhase('phase3');
@@ -284,28 +300,49 @@
     // Phase3 -> Phase4 (select top3)
     qs('#toPhase4').addEventListener('click', ()=>{
       const items = qsa('#priorityList .item').map(li=>{
-        const text = (li.querySelector('.ptext') && li.querySelector('.ptext').value) ? li.querySelector('.ptext').value.trim() : '';
+        const textEl = li.querySelector('.ptext');
+        const text = textEl ? textEl.value.trim() : '';
         const urgEl = li.querySelector('.urg');
         const impEl = li.querySelector('.imp');
-        const urg = urgEl ? (Number(urgEl.value)||0) : 0;
-        const imp = impEl ? (Number(impEl.value)||0) : 0;
-        const pin = li.querySelector('.pin') ? li.querySelector('.pin').checked : false;
+        const pinEl = li.querySelector('.pin');
+        const urg = Number(urgEl ? urgEl.value : 0) || 0;
+        const imp = Number(impEl ? impEl.value : 0) || 0;
+        const pin = pinEl ? pinEl.checked : false;
         return {text,urg,imp,pin,score:urg+imp};
-      }).filter(x=>x.text || x.pin);
+      }).filter(x=>x.text); // drop empty texts
 
-      if(items.length===0){ alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。'); showPhase('phase2'); return; }
+      if(items.length===0){
+        alert('要素が1つもありません。フェーズ2に戻って要素を入力してください。');
+        return;
+      }
 
-      // sort by score then importance
-      items.sort((a,b)=> (b.score - a.score) || (b.imp - a.imp));
-      // ensure pinned items are included
+      // sort by score desc, tie-breaker by importance, then urgency
+      items.sort((a,b)=> {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.imp !== a.imp) return b.imp - a.imp;
+        return b.urg - a.urg;
+      });
+
+      // ensure pinned items are included in the top 3
       const pinned = items.filter(i=>i.pin);
       let top = items.slice(0,3);
-      pinned.forEach(p=>{ if(!top.includes(p)) { if(top.length<3) top.push(p); else { top.pop(); top.push(p); } } });
-      // dedupe and ensure length 3
-      top = Array.from(new Set(top));
-      while(top.length < 3) top.push({text:'',urg:0,imp:0,score:0});
-      top = top.slice(0,3);
 
+      // add pinned that aren't included, replacing lowest scored ones if necessary
+      pinned.forEach(p=>{
+        if (!top.includes(p)) {
+          // replace the lowest-scoring element in top (last)
+          top.pop();
+          top.push(p);
+        }
+      });
+
+      // dedupe & limit to 3
+      top = Array.from(new Set(top)).slice(0,3);
+
+      // if fewer than 3, pad with empty placeholders
+      while(top.length < 3) top.push({text:'',urg:0,imp:0,score:0});
+
+      // render orderedList with exactly 3 items
       const ul = qs('#orderedList'); ul.innerHTML='';
       top.forEach((it,idx)=>{
         const li = document.createElement('li'); li.className='item draggable';
@@ -315,8 +352,8 @@
             <input type="text" class="ordtext" data-idx="${idx}" />
           </div>
           <div class="controls">
-            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
-            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>
+            <button data-action="up" data-idx="${idx}">↑</button>
+            <button data-action="down" data-idx="${idx}">↓</button>
           </div>
         `;
         ul.appendChild(li);
@@ -328,14 +365,15 @@
 
     qs('#backTo3').addEventListener('click', ()=>{ showPhase('phase3'); });
 
-    // reorder up/down
+    // reorder up/down in orderedList (3 items)
     qs('#orderedList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.idx);
       const inputs = qsa('.ordtext').map(i=>i.value);
+      if(!Array.isArray(inputs) || inputs.length === 0) return;
       if(action==='up' && idx>0){ [inputs[idx-1],inputs[idx]] = [inputs[idx],inputs[idx-1]]; }
       if(action==='down' && idx < inputs.length-1){ [inputs[idx+1],inputs[idx]] = [inputs[idx],inputs[idx+1]]; }
-      // rerender
+      // rerender exactly as many inputs as present (should be 3)
       const ul = qs('#orderedList'); ul.innerHTML='';
       inputs.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `
@@ -344,8 +382,8 @@
             <input type="text" class="ordtext" data-idx="${i}" />
           </div>
           <div class="controls">
-            <button class="secondary" data-action="up" data-idx="${i}">↑</button>
-            <button class="secondary" data-action="down" data-idx="${i}">↓</button>
+            <button data-action="up" data-idx="${i}">↑</button>
+            <button data-action="down" data-idx="${i}">↓</button>
           </div>`;
         ul.appendChild(li);
         const ordInput = li.querySelector('.ordtext'); if(ordInput) ordInput.value = t;
@@ -355,7 +393,10 @@
     // Phase4 -> Phase5
     qs('#toPhase5').addEventListener('click', ()=>{
       const arr = qsa('.ordtext').map(i=>i.value.trim()).filter(Boolean);
-      if(arr.length===0){ alert('優先する要素がありません。戻って要素を整理してください。'); return; }
+      if(arr.length===0){
+        alert('優先する要素がありません。戻って要素を整理してください。');
+        return;
+      }
       const ul = qs('#finalInputs'); ul.innerHTML='';
       arr.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item'; li.innerHTML = `
@@ -373,18 +414,18 @@
 
     // Phase5 -> Phase6
     qs('#toPhase6').addEventListener('click', ()=>{
-      const intro = qs('#intro') ? qs('#intro').value.trim() : '';
-      const closing = qs('#closing') ? qs('#closing').value.trim() : '';
+      const intro = qs('#intro').value.trim();
+      const closing = qs('#closing').value.trim();
       const pieces = qsa('.finalPiece').map(t=>t.value.trim()).filter(Boolean);
       const final = buildFinalMessage(intro,pieces,closing);
-      const fm = qs('#finalMessage'); if(fm) fm.textContent = final;
+      qs('#finalMessage').textContent = final;
       showPhase('phase6');
     });
 
     // copy
     qs('#copyBtn').addEventListener('click', ()=>{
-      const el = qs('#finalMessage'); const txt = el ? el.textContent : '';
-      if(!txt) { alert('コピーするテキストがありません。'); return; }
+      const txt = qs('#finalMessage').textContent;
+      if (!txt) { alert('コピーするテキストがありません。'); return; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(()=> alert('文章をコピーしました。'), ()=> alert('コピーに失敗しました。'));
       } else {
@@ -396,7 +437,7 @@
         document.body.removeChild(ta);
       }
     });
-    qs('#editBtn').addEventListener('click', ()=>{ const fm = qs('#finalMessage'); if(fm) { fm.contentEditable = true; fm.focus(); } });
+    qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
     qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) { location.hash = '#phase1'; showPhase('phase1'); } });
 
     // helpers
@@ -408,7 +449,7 @@
       return lines.join('\n');
     }
 
-    // Warn: if certain keywords appear (suicide), show resource hint
+    // Warn: if certain keywords appear (self-harm), show resource hint
     function containsSelfHarmKeywords(text){
       if(!text) return false;
       const keywords = ['死にたい','自殺','希死','消えたい','首を','殺して','終わりにしたい','死んで'];
@@ -422,7 +463,7 @@
     banner.style.display='none';
 
     qs('#rawText').addEventListener('input', ()=>{
-      const v = qs('#rawText').value;
+      const v = qs('#rawText').value || '';
       if(containsSelfHarmKeywords(v)){
         banner.style.display='block'; banner.innerHTML = '<strong class="danger">もし今すぐに危険を感じているなら、いますぐ最寄りの緊急連絡（119）または警察（110）へ連絡してください。専門の相談も利用できます。ページ下部の支援情報を確認してください。</strong>';
       } else { banner.style.display='none'; }
@@ -448,7 +489,7 @@
         pdfBtn.textContent = '🖨️ PDFとして保存';
         pdfBtn.style.marginLeft = '8px';
         pdfBtn.id = 'pdfBtn';
-        const controls = qs('#phase6') ? qs('#phase6').querySelector('div[style*="gap:8px"]') : null;
+        const controls = qs('#phase6').querySelector('div[style*="gap:8px"]');
         if (controls) controls.appendChild(pdfBtn);
 
         async function loadScript(src){
@@ -479,6 +520,7 @@
 
             if(!(window.html2canvas && (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF))))) throw new Error('PDF libraries not available');
 
+            // prepare a printable card
             const card = document.createElement('div');
             card.style.padding = '20px';
             card.style.background = 'white';
@@ -497,6 +539,7 @@
             const canvas = await window.html2canvas(card, {scale:2});
             const imgData = canvas.toDataURL('image/png');
 
+            // use the available jsPDF constructor
             const jsPDFConstructor = (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF)));
             const pdf = new jsPDFConstructor({orientation:'p', unit:'px', format:'a4'});
             const pageWidth = pdf.internal.pageSize.getWidth();
@@ -521,11 +564,16 @@
       }
     })();
 
-    // Optional: handle browser back/forward to show phase from hash
+    // handle hash change to sync phases
     window.addEventListener('hashchange', ()=>{
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       if (qs('#' + frag)) showPhase(frag);
     }, false);
+
+    // reserved htmx event listener (no-op)
+    document.body.addEventListener('htmx:beforeRequest', function(evt){
+      // no-op but reserved for future enhancements
+    });
 
   </script>
 </body>
