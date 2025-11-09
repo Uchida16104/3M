@@ -531,7 +531,7 @@
               .replace(/:/g, "-");
             
             pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
-            pdf.save('3M_Message_'+formatted+'.pdf');
+            pdf.save('3M-Message_'+formatted+'.pdf');
             document.body.removeChild(card);
             pdfBtn.textContent = prev;
             pdfBtn.disabled = false;
