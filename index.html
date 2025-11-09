@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🧠 3M — I Message to You About My Mind.</title>
 
-  <!-- Tailwind（必須）: CDNで読み込み。オリジナルの CSS を優先するため、Tailwind を先に読み込み -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
   <!-- HTMX（要件：unpkg から読み込み） -->
   <script src="https://unpkg.com/htmx.org"></script>
 
@@ -30,42 +27,27 @@
     .final{white-space:pre-wrap;background:#0b1220;color:#e8f0ff;padding:12px;border-radius:8px}
     .danger{color:#b00020}
     .hidden{display:none !important}
-
-    /* === カスタム：+ - ↑ ↓ ボタンの配色（文字色と背景色のみ） ===
-       要件どおり、レイアウトや他のCSSは変更せず、ボタンの色だけ上書きします。
-       それぞれのボタンは data-action 属性で識別しています。 */
     button[data-action="add"] {
-      background: #16a085; /* 緑系背景 */
-      color: white;        /* 文字を白に */
+      background: #16a085;
+      color: white;
     }
     button[data-action="del"] {
-      background: #e74c3c; /* 赤系背景 */
+      background: #e74c3c;
       color: white;
     }
     button[data-action="up"] {
-      background: #f1c40f; /* 黄系背景 */
-      color: #111;         /* 少し濃い文字 */
+      background: #f1c40f;
+      color: #111;
     }
     button[data-action="down"] {
-      background: #2980b9; /* 青系背景 */
+      background: #2980b9;
       color: white;
     }
-
-    /* プログレスバーの最小スタイル（レイアウトを崩さないように軽微） */
-    .progressWrap { margin-top:10px; height:10px; background:#e6eef8; border-radius:999px; overflow:hidden; }
-    .progressBar { height:100%; width:0%; background:linear-gradient(90deg,#1565d8,#4fc3f7); transition:width .25s ease; }
-    .progressLabel { font-size:12px; color:#666; margin-top:6px; }
   </style>
 </head>
 <body>
   <h1>🧠 3M — I Message to You About My Mind.</h1>
   <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
-
-  <!-- プログレス（フェーズの進捗表示） -->
-  <div id="progressContainer" class="card" style="padding:10px 14px;margin-top:6px;">
-    <div class="progressWrap" aria-hidden="true"><div id="progressBar" class="progressBar"></div></div>
-    <div id="progressLabel" class="progressLabel">Phase 1 / 6</div>
-  </div>
 
   <!-- フェーズ1 -->
   <section class="card" id="phase1">
@@ -73,15 +55,15 @@
     <p class="small">思ったことをそのまま書き出します（長文可）。</p>
     <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
     <div style="margin-top:10px">
-      <!-- hx-push-url は要件どおり付与 -->
+      <!-- hx-push-url は要件どおり付与。実際の表示は JS の navigatePhase で行う -->
       <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">5つに分解する → フェーズ2</button>
     </div>
   </section>
 
   <!-- フェーズ2 -->
   <section class="card hidden" id="phase2">
-    <h2>フェーズ2 — 要素に分解（句読点ベース）</h2>
-    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください。＋ボタンで要素を追加、−で削除できます。</p>
+    <h2>フェーズ2 — 5つの要素に分解</h2>
+    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
     <ul id="elementsList"></ul>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="backTo1" class="secondary" hx-push-url="true" data-phase="phase1">戻る</button>
@@ -148,9 +130,6 @@
     const qs = sel => document.querySelector(sel);
     const qsa = sel => Array.from(document.querySelectorAll(sel));
 
-    // フェーズ一覧（順序）
-    const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
-
     // --- フェーズ表示制御（HTMX 履歴 push を利用） ---
     function showPhase(phaseId, options = {}) {
       // hide all phase sections and show the requested one.
@@ -163,20 +142,16 @@
       const frag = '#' + phaseId;
       try {
         if (window.htmx && typeof htmx.pushUrl === 'function') {
+          // htmx.pushUrl expects a URL; use current path + fragment
           htmx.pushUrl(location.pathname + frag);
         } else {
+          // Fallback
           history.replaceState(null, '', location.pathname + frag);
         }
       } catch (e) {
+        // silent fallback
         try { history.replaceState(null, '', location.pathname + frag); } catch (_){}
       }
-
-      // update progress UI
-      const idx = phases.indexOf(phaseId);
-      const total = phases.length;
-      const pct = Math.round(((idx+1) / total) * 100);
-      const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
-      const label = qs('#progressLabel'); if(label) label.textContent = `Phase ${idx+1} / ${total}`;
 
       // optional callback after showing
       if (options && typeof options.after === 'function') options.after();
@@ -192,6 +167,7 @@
     // Attach all buttons that have data-phase to navigate via showPhase
     qsa('button[data-phase]').forEach(btn=>{
       btn.addEventListener('click', (ev)=>{
+        // prevent default just in case
         ev && ev.preventDefault && ev.preventDefault();
         const target = btn.getAttribute('data-phase');
         if (!target) return;
@@ -199,31 +175,35 @@
       });
     });
 
-    // --- テキスト分割ユーティリティ（句読点に応じた数を生成） ---
-    function splitIntoPieces(text){
-      if(!text) return [];
-      // Trim and normalize whitespace
-      const normalized = text.trim();
-      if(!normalized) return [];
-      // 日本語と英語の句読点・終端記号で分割: 。．!?？.!?
-      // 正規表現で「終端記号＋その後の空白」を頼りに分割
-      // 末尾に終端記号がない場合でも行単位で考慮
-      let pieces = normalized.split(/(?<=[。．!?？.!?])\s*|\n+/u).map(s=>s.trim()).filter(Boolean);
-      return pieces;
+    // --- テキスト分割ユーティリティ（既存ロジックを尊重） ---
+    function splitIntoPieces(text, maxPieces){
+      if(!text) return Array.from({length:maxPieces},()=>"");
+      // まず行で分割
+      let pieces = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      // さらに文末句読点で分割（日本語・英語対応）
+      pieces = pieces.flatMap(p => p.split(/(?<=[。．.!?？])\s*/));
+      pieces = pieces.map(s=>s.trim()).filter(Boolean);
+      // If still more than maxPieces, join short ones
+      if(pieces.length > maxPieces){
+        // try to merge from end
+        while(pieces.length > maxPieces){
+          let a = pieces.splice(pieces.length-2,2).join(' ');
+          pieces.push(a);
+        }
+      }
+      // pad
+      while(pieces.length < maxPieces) pieces.push("");
+      return pieces.slice(0,maxPieces);
     }
 
     function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // --- フェーズ1 -> フェーズ2 動作（句読点で分割した数の要素を生成） ---
+    // --- フェーズ1 -> フェーズ2 動作（既存機能保持） ---
     qs('#toPhase2').addEventListener('click', ()=>{
-      const raw = qs('#rawText').value || '';
-      const arr = splitIntoPieces(raw);
-
-      // If no sentence-like pieces found, fallback to splitting by lines, otherwise allow user to add manually
-      const pieces = arr.length ? arr : (raw.split(/\n+/).map(s=>s.trim()).filter(Boolean) || ['']);
-
+      const raw = qs('#rawText').value.trim();
+      const arr = splitIntoPieces(raw,5);
       const ul = qs('#elementsList'); ul.innerHTML = '';
-      pieces.forEach((t,i)=>{
+      arr.forEach((t,i)=>{
         const li = document.createElement('li');
         li.className = 'item';
         li.innerHTML = `
@@ -238,27 +218,23 @@
         `;
         ul.appendChild(li);
       });
-
       // show phase2 (this will update URL via showPhase)
       showPhase('phase2');
     });
 
     qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
 
-    // Allow add/delete element fields in フェーズ2 (no fixed limit)
+    // allow add/delete element fields (フェーズ2 内)
     qs('#elementsList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.index);
-      // read current inputs
       const inputs = qsa('.elementInput').map(x=>x.value);
-      if(action==='add'){
-        // insert an empty element after idx
-        inputs.splice(idx+1,0,'');
-      }
-      if(action==='del'){
-        inputs.splice(idx,1);
-      }
-      // rebuild list (no fixed length normalization)
+      if(action==='add') inputs.splice(idx+1,0,'');
+      if(action==='del') inputs.splice(idx,1);
+      // normalize to 5 slots
+      while(inputs.length < 5) inputs.push('');
+      while(inputs.length > 5) inputs.pop();
+      // rebuild
       const ul = qs('#elementsList'); ul.innerHTML='';
       inputs.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item'; li.innerHTML=`
@@ -274,7 +250,7 @@
       });
     });
 
-    // Phase2 -> Phase3: map current element inputs into priorityList
+    // Phase2 -> Phase3
     qs('#toPhase3').addEventListener('click', ()=>{
       const full = qsa('.elementInput').map(i=>i.value.trim());
       const ul = qs('#priorityList'); ul.innerHTML='';
@@ -338,7 +314,7 @@
 
     qs('#backTo3').addEventListener('click', ()=>{ showPhase('phase3'); });
 
-    // reorder up/down (in フェーズ4)
+    // reorder up/down
     qs('#orderedList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.idx);
@@ -450,6 +426,7 @@
 
     // ===== PDF出力機能（html2canvas + jsPDF を動的ロード） =====
     (function addPdfButtonAndHandler(){
+      // add PDF button next to copy/edit/reset (in phase6)
       try {
         const pdfBtn = document.createElement('button');
         pdfBtn.textContent = '🖨️ PDFとして保存';
