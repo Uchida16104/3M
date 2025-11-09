@@ -1,4 +1,4 @@
-<img src="./3M.png" style="max-width: 25%;" />
+<img src="./3M.png" />
 
 # 🧠 3M — *I Message to You About My Mind.*
 
