@@ -54,7 +54,7 @@
   <!-- プログレス（フェーズの進捗表示） -->
   <div id="progressContainer" class="card" style="padding:10px 14px;margin-top:6px;">
     <div class="progressWrap" aria-hidden="true"><div id="progressBar" class="progressBar"></div></div>
-    <div id="progressLabel" class="progressLabel">Phase 1 / 6</div>
+    <div id="progressLabel" class="progressLabel">フェーズ 1 / 6</div>
   </div>
   <!-- フェーズ1 -->
   <section class="card" id="phase1">
@@ -164,7 +164,7 @@
       const total = phases.length;
       const pct = Math.round(((idx+1) / total) * 100);
       const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
-      const label = qs('#progressLabel'); if(label) label.textContent = `Phase ${idx+1} / ${total}`;
+      const label = qs('#progressLabel'); if(label) label.textContent = `フェーズ ${idx+1} / ${total}`;
 
       // optional callback after showing
       if (options && typeof options.after === 'function') options.after();
