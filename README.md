@@ -1,3 +1,5 @@
+<img src="./3M.png" style="max-width: 25%;" />
+
 # 🧠 3M — *I Message to You About My Mind.*
 
 > 精神的に混乱したとき、「何を言いたいのかわからない」と言われてしまう人のための思考整理・対話支援ツール。
