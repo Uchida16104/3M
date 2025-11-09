@@ -6,7 +6,10 @@
   <title>🧠 3M — I Message to You About My Mind.</title>
 
   <!-- HTMX（要件：unpkg から読み込み） -->
-  <script src="https://unpkg.com/htmx.org"></script>
+  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
+
+  <!-- Tailwind CSS（要件：必須で使用） -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     :root{font-family: system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif}
@@ -27,29 +30,52 @@
     .final{white-space:pre-wrap;background:#0b1220;color:#e8f0ff;padding:12px;border-radius:8px}
     .danger{color:#b00020}
     .hidden{display:none !important}
+
+    /* ---------- ボタンカラー（提案の色を反映） ---------- */
+    .btn-plus { background:#003366; color:#FFFFFF; border-radius:8px; padding:6px 10px; border:none; cursor:pointer; }
+    .btn-minus{ background:#660000; color:#FFFFFF; border-radius:8px; padding:6px 10px; border:none; cursor:pointer; }
+    .btn-up   { background:#004D40; color:#FFFFFF; border-radius:8px; padding:6px 10px; border:none; cursor:pointer; }
+    .btn-down { background:#4A148C; color:#FFFFFF; border-radius:8px; padding:6px 10px; border:none; cursor:pointer; }
+
+    /* focus/hover outline for accessibility */
+    button:focus, button:hover { outline: 3px solid #FFD700; outline-offset: 2px; }
+
+    /* progress bar */
+    .progressWrap{height:14px;background:#e6eef8;border-radius:999px;overflow:hidden;margin-top:12px}
+    .progressBar{height:100%;width:0%;background:linear-gradient(90deg,#1565d8,#42a5f5);transition:width 300ms ease}
+    .progressLabel{font-size:13px;color:#2b3b4a;margin-top:6px}
   </style>
 </head>
-<body>
+<body class="antialiased">
   <h1>🧠 3M — I Message to You About My Mind.</h1>
+
   <p class="lead">考えがまとまらないときに、話す内容を段階的に整理して相手に伝えるためのツールです。下のフェーズに沿って進めてください。</p>
+
+  <!-- プログレスバー -->
+  <div id="progressContainer" class="card">
+    <div class="progressLabel" id="progressText">Phase 1 / 6</div>
+    <div class="progressWrap" aria-hidden="true">
+      <div id="progressBar" class="progressBar" style="width:16.66%"></div>
+    </div>
+  </div>
 
   <!-- フェーズ1 -->
   <section class="card" id="phase1">
-    <h2>フェーズ1 — ありのまま入力</h2>
-    <p class="small">思ったことをそのまま書き出します（長文可）。</p>
+    <h2 class="text-lg font-medium mb-1">フェーズ1 — ありのまま入力</h2>
+    <p class="small">思ったことをそのまま書き出します（長文可）。句読点（。 、 . , ! ? など）で分割して次のフェーズで要素を自動生成します。</p>
     <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
-    <div style="margin-top:10px">
-      <!-- hx-push-url は要件どおり付与。実際の表示は JS の navigatePhase で行う -->
-      <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">5つに分解する → フェーズ2</button>
+    <div class="mt-3">
+      <!-- hx-push-url は要件どおり付与 -->
+      <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">句読点で分割して → フェーズ2</button>
     </div>
   </section>
 
   <!-- フェーズ2 -->
   <section class="card hidden" id="phase2">
-    <h2>フェーズ2 — 5つの要素に分解</h2>
-    <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
-    <ul id="elementsList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <h2 class="text-lg font-medium mb-1">フェーズ2 — 句読点で分割した要素</h2>
+    <p class="small">フェーズ1で入力したテキストを句読点で分割して「要素」を生成します。編集・追加・削除が可能です（要素数の上限はありません）。</p>
+    <ul id="elementsList" class="mt-3"></ul>
+    <div class="flex gap-2 mt-3">
       <button id="backTo1" class="secondary" hx-push-url="true" data-phase="phase1">戻る</button>
       <button id="toPhase3" hx-push-url="true" data-phase="phase3" class="btn-next">優先度チェック → フェーズ3</button>
     </div>
@@ -57,10 +83,10 @@
 
   <!-- フェーズ3 -->
   <section class="card hidden" id="phase3">
-    <h2>フェーズ3 — 緊急度と優先順位で上位3つに絞る</h2>
-    <p class="small">それぞれの要素について、緊急性（0-5）と重要性（0-5）を入力してください。自動的に合計スコアで上位3つが選ばれます。手動でピン留めも可能です。</p>
-    <ul id="priorityList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <h2 class="text-lg font-medium mb-1">フェーズ3 — 緊急度と重要度で上位を選出</h2>
+    <p class="small">各要素に緊急度（0-5）・重要度（0-5）を入力してください。合計スコアで上位3つを自動選出します。ピン留めで必ず残すことも可能です。</p>
+    <ul id="priorityList" class="mt-3"></ul>
+    <div class="flex gap-2 mt-3">
       <button id="backTo2" class="secondary" hx-push-url="true" data-phase="phase2">戻る</button>
       <button id="toPhase4" hx-push-url="true" data-phase="phase4" class="btn-next">3つに絞る → フェーズ4</button>
     </div>
@@ -68,10 +94,10 @@
 
   <!-- フェーズ4 -->
   <section class="card hidden" id="phase4">
-    <h2>フェーズ4 — 3つの要素に優先順位を付ける</h2>
-    <p class="small">上下ボタンで順序を調整してください（上が伝える順序の優先度高）。</p>
-    <ul id="orderedList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <h2 class="text-lg font-medium mb-1">フェーズ4 — 3つの要素に優先順位を付ける</h2>
+    <p class="small">上下ボタンで伝える順序を調整してください（上が優先度高）。</p>
+    <ul id="orderedList" class="mt-3"></ul>
+    <div class="flex gap-2 mt-3">
       <button id="backTo3" class="secondary" hx-push-url="true" data-phase="phase3">戻る</button>
       <button id="toPhase5" hx-push-url="true" data-phase="phase5" class="btn-next">文章を組み立てる → フェーズ5</button>
     </div>
@@ -79,18 +105,18 @@
 
   <!-- フェーズ5 -->
   <section class="card hidden" id="phase5">
-    <h2>フェーズ5 — 相手に伝える文章を作る</h2>
-    <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
-    <div>
+    <h2 class="text-lg font-medium mb-1">フェーズ5 — 相手に伝える文章を作る</h2>
+    <p class="small">選ばれた3つを短く具体的にまとめ、冒頭（目的）と締め（お願い）を用意します。</p>
+    <div class="mt-2">
       <label class="small">冒頭（目的）</label>
       <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
     </div>
-    <ul id="finalInputs"></ul>
-    <div style="margin-top:8px">
+    <ul id="finalInputs" class="mt-3"></ul>
+    <div class="mt-2">
       <label class="small">締め（お願い／確認）</label>
       <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div class="flex gap-2 mt-3">
       <button id="backTo4" class="secondary" hx-push-url="true" data-phase="phase4">戻る</button>
       <button id="toPhase6" hx-push-url="true" data-phase="phase6" class="btn-next">完成 → フェーズ6</button>
     </div>
@@ -98,60 +124,70 @@
 
   <!-- フェーズ6 -->
   <section class="card hidden" id="phase6">
-    <h2>フェーズ6 — 完成</h2>
-    <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
-    <div class="final" id="finalMessage" contenteditable="false"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="copyBtn">コピー</button>
+    <h2 class="text-lg font-medium mb-1">フェーズ6 — 完成</h2>
+    <p class="small">下の文章を相手に伝えてください。編集・コピー・PDF化が可能です。</p>
+    <div class="final mt-2" id="finalMessage" contenteditable="false" aria-live="polite"></div>
+    <div class="flex gap-2 mt-3">
+      <button id="copyBtn" class="btn-next">コピー</button>
       <button id="editBtn" class="secondary">編集する</button>
       <button id="resetBtn" class="secondary">最初からやり直す</button>
-      <!-- PDFボタンはスクリプトで生成して追加（動的ロード対応） -->
     </div>
   </section>
 
   <script>
-    // --- ユーティリティ（DOMクエリ） ---
-    const qs = sel => document.querySelector(sel);
-    const qsa = sel => Array.from(document.querySelectorAll(sel));
+    // --- DOM helpers ---
+    const qs = s => document.querySelector(s);
+    const qsa = s => Array.from(document.querySelectorAll(s));
 
-    // --- フェーズ表示制御（HTMX 履歴 push を利用） ---
+    // phases
+    const PHASES = ['phase1','phase2','phase3','phase4','phase5','phase6'];
+
+    // --- showPhase with progress update ---
     function showPhase(phaseId, options = {}) {
-      // hide all phase sections and show the requested one.
       qsa('section[id^="phase"]').forEach(s => {
         if (s.id === phaseId) s.classList.remove('hidden');
         else s.classList.add('hidden');
       });
 
-      // update fragment using htmx API if available, otherwise fallback to history API
+      // update URL fragment using htmx push or history fallback
       const frag = '#' + phaseId;
       try {
         if (window.htmx && typeof htmx.pushUrl === 'function') {
-          // htmx.pushUrl expects a URL; use current path + fragment
           htmx.pushUrl(location.pathname + frag);
         } else {
-          // Fallback
           history.replaceState(null, '', location.pathname + frag);
         }
       } catch (e) {
-        // silent fallback
-        try { history.replaceState(null, '', location.pathname + frag); } catch (_){}
+        try { history.replaceState(null, '', location.pathname + frag); } catch(_) {}
       }
 
-      // optional callback after showing
-      if (options && typeof options.after === 'function') options.after();
+      // update progress bar
+      const idx = PHASES.indexOf(phaseId);
+      const total = PHASES.length;
+      const percent = ((idx + 1) / total) * 100;
+      const bar = qs('#progressBar'); const label = qs('#progressText');
+      if (bar) bar.style.width = percent + '%';
+      if (label) label.textContent = `Phase ${idx+1} / ${total}`;
+      if (options && typeof options.after==='function') options.after();
+      // move focus to first interactive element in the phase for accessibility
+      setTimeout(()=> {
+        const root = qs('#' + phaseId);
+        if(!root) return;
+        const first = root.querySelector('textarea, input, button');
+        if(first) first.focus();
+      }, 150);
     }
 
-    // On load, if fragment present, show that phase. Default to phase1.
+    // On load: show phase from hash or default
     (function initPhaseFromFragment(){
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       const valid = !!qs('#' + frag);
       showPhase(valid ? frag : 'phase1');
     })();
 
-    // Attach all buttons that have data-phase to navigate via showPhase
+    // attach all buttons with data-phase
     qsa('button[data-phase]').forEach(btn=>{
-      btn.addEventListener('click', (ev)=>{
-        // prevent default just in case
+      btn.addEventListener('click', ev => {
         ev && ev.preventDefault && ev.preventDefault();
         const target = btn.getAttribute('data-phase');
         if (!target) return;
@@ -159,85 +195,89 @@
       });
     });
 
-    // --- テキスト分割ユーティリティ（既存ロジックを尊重） ---
-    function splitIntoPieces(text, maxPieces){
-      if(!text) return Array.from({length:maxPieces},()=>"");
-      // まず行で分割
-      let pieces = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-      // さらに文末句読点で分割（日本語・英語対応）
-      pieces = pieces.flatMap(p => p.split(/(?<=[。．.!?？])\s*/));
-      pieces = pieces.map(s=>s.trim()).filter(Boolean);
-      // If still more than maxPieces, join short ones
-      if(pieces.length > maxPieces){
-        // try to merge from end
-        while(pieces.length > maxPieces){
-          let a = pieces.splice(pieces.length-2,2).join(' ');
-          pieces.push(a);
-        }
-      }
-      // pad
-      while(pieces.length < maxPieces) pieces.push("");
-      return pieces.slice(0,maxPieces);
+    // --- Text splitting (句読点で分割) ---
+    function splitIntoPieces(text){
+      if(!text) return [];
+      // split by Japanese/English sentence-ending punctuation and commas/読点 too
+      // keep short fragments; user requested "句読点の分だけ" so no maximum
+      // regex: split on punctuation marks (。．、,.!?？；;) followed by optional spaces
+      const rawPieces = text.split(/(?<=[。．、,!.?？；;])\s*/).map(s=>s.trim()).filter(Boolean);
+      return rawPieces;
     }
 
     function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // --- フェーズ1 -> フェーズ2 動作（既存機能保持） ---
+    // --- Phase1 -> Phase2 ---
     qs('#toPhase2').addEventListener('click', ()=>{
       const raw = qs('#rawText').value.trim();
-      const arr = splitIntoPieces(raw,5);
+      const arr = splitIntoPieces(raw);
+      // If no punctuation-based split produced anything, fallback to whole text
+      const pieces = (arr.length>0) ? arr : (raw ? [raw] : []);
+      renderElementsList(pieces);
+      showPhase('phase2');
+    });
+
+    qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
+
+    // render elements list (for Phase2)
+    function renderElementsList(items){
       const ul = qs('#elementsList'); ul.innerHTML = '';
-      arr.forEach((t,i)=>{
-        const li = document.createElement('li');
-        li.className = 'item';
+      // build list; no hard limit in count
+      items.forEach((t,i)=>{
+        const li = document.createElement('li'); li.className = 'item';
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
             <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
           </div>
           <div class="controls">
-            <button class="secondary" data-action="add" data-index="${i}">＋</button>
-            <button class="secondary" data-action="del" data-index="${i}">－</button>
+            <button class="btn-plus" data-action="add" data-index="${i}" aria-label="要素${i+1}の下に追加">＋</button>
+            <button class="btn-minus" data-action="del" data-index="${i}" aria-label="要素${i+1}を削除">－</button>
           </div>
         `;
         ul.appendChild(li);
       });
-      // show phase2 (this will update URL via showPhase)
-      showPhase('phase2');
-    });
 
-    qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
+      // if empty, show one blank input so user can add manually
+      if(items.length === 0){
+        const li = document.createElement('li'); li.className = 'item';
+        li.innerHTML = `
+          <div style="flex:1">
+            <label class="small">要素 1</label>
+            <input type="text" data-index="0" class="elementInput" value="" />
+          </div>
+          <div class="controls">
+            <button class="btn-plus" data-action="add" data-index="0">＋</button>
+            <button class="btn-minus" data-action="del" data-index="0">－</button>
+          </div>
+        `;
+        ul.appendChild(li);
+      }
+    }
 
-    // allow add/delete element fields (フェーズ2 内)
+    // add/delete element fields (Phase2)
     qs('#elementsList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.index);
       const inputs = qsa('.elementInput').map(x=>x.value);
-      if(action==='add') inputs.splice(idx+1,0,'');
-      if(action==='del') inputs.splice(idx,1);
-      // normalize to 5 slots
-      while(inputs.length < 5) inputs.push('');
-      while(inputs.length > 5) inputs.pop();
-      // rebuild
-      const ul = qs('#elementsList'); ul.innerHTML='';
-      inputs.forEach((t,i)=>{
-        const li = document.createElement('li'); li.className='item'; li.innerHTML=`
-          <div style="flex:1">
-            <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
-          </div>
-          <div class="controls">
-            <button class="secondary" data-action="add" data-index="${i}">＋</button>
-            <button class="secondary" data-action="del" data-index="${i}">－</button>
-          </div>`;
-        ul.appendChild(li);
-      });
+      if(action==='add') {
+        inputs.splice(idx+1,0,'');
+      }
+      if(action==='del') {
+        inputs.splice(idx,1);
+      }
+      // rebuild list with new values (no limit)
+      renderElementsList(inputs);
     });
 
     // Phase2 -> Phase3
     qs('#toPhase3').addEventListener('click', ()=>{
-      const full = qsa('.elementInput').map(i=>i.value.trim());
-      const ul = qs('#priorityList'); ul.innerHTML='';
+      const full = qsa('.elementInput').map(i=>i.value.trim()).filter(Boolean);
+      const ul = qs('#priorityList'); ul.innerHTML = '';
+      if (full.length === 0){
+        // If all empty, show a single empty row so user can input
+        full.push('');
+      }
       full.forEach((t,i)=>{
         const li = document.createElement('li'); li.className='item';
         li.innerHTML = `
@@ -286,8 +326,8 @@
             <input type="text" class="ordtext" data-idx="${idx}" value="${escapeHtml(it.text)}" />
           </div>
           <div class="controls">
-            <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
-            <button class="secondary" data-action="down" data-idx="${idx}">↓</button>
+            <button class="btn-up" data-action="up" data-idx="${idx}" aria-label="上へ">↑</button>
+            <button class="btn-down" data-action="down" data-idx="${idx}" aria-label="下へ">↓</button>
           </div>
         `;
         ul.appendChild(li);
@@ -298,7 +338,7 @@
 
     qs('#backTo3').addEventListener('click', ()=>{ showPhase('phase3'); });
 
-    // reorder up/down
+    // reorder up/down in orderedList
     qs('#orderedList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.idx);
@@ -314,8 +354,8 @@
             <input type="text" class="ordtext" data-idx="${i}" value="${escapeHtml(t)}" />
           </div>
           <div class="controls">
-            <button class="secondary" data-action="up" data-idx="${i}">↑</button>
-            <button class="secondary" data-action="down" data-idx="${i}">↓</button>
+            <button class="btn-up" data-action="up" data-idx="${i}">↑</button>
+            <button class="btn-down" data-action="down" data-idx="${i}">↓</button>
           </div>`;
         ul.appendChild(li);
       });
@@ -355,7 +395,6 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(()=> alert('文章をコピーしました。'), ()=> alert('コピーに失敗しました。'));
       } else {
-        // fallback
         const ta = document.createElement('textarea');
         ta.value = txt;
         document.body.appendChild(ta);
@@ -365,7 +404,7 @@
       }
     });
     qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
-    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) location.href='#phase1' });
+    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) location.href = location.pathname + '#phase1'; });
 
     // helpers
     function buildFinalMessage(intro,pieces,closing){
@@ -410,13 +449,12 @@
 
     // ===== PDF出力機能（html2canvas + jsPDF を動的ロード） =====
     (function addPdfButtonAndHandler(){
-      // add PDF button next to copy/edit/reset (in phase6)
       try {
         const pdfBtn = document.createElement('button');
         pdfBtn.textContent = '🖨️ PDFとして保存';
         pdfBtn.style.marginLeft = '8px';
         pdfBtn.id = 'pdfBtn';
-        const controls = qs('#phase6').querySelector('div[style*="gap:8px"]');
+        const controls = qs('#phase6').querySelector('div[style*="gap:2"]') || qs('#phase6').querySelector('div.flex');
         if (controls) controls.appendChild(pdfBtn);
 
         async function loadScript(src){
@@ -486,16 +524,14 @@
       }
     })();
 
-    // Optional: handle browser back/forward to show phase from hash
+    // handle hashchange
     window.addEventListener('hashchange', ()=>{
       const frag = location.hash ? location.hash.replace('#','') : 'phase1';
       if (qs('#' + frag)) showPhase(frag);
     }, false);
 
-    // Safety: ensure navigation via links with hx-push-url true also triggers our showPhase when user clicks anchor or buttons using htmx events
-    document.body.addEventListener('htmx:beforeRequest', function(evt){
-      // no-op but reserved for future enhancements
-    });
+    // reserved htmx hook
+    document.body.addEventListener('htmx:beforeRequest', function(){});
 
   </script>
 </body>
