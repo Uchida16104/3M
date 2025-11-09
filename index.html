@@ -53,22 +53,20 @@
     .progressBar { height:100%; width:0%; background:linear-gradient(90deg,#1565d8,#4fc3f7); transition:width .25s ease; }
     .progressLabel { font-size:12px; color:#666; margin-top:6px; }
 
-    /* 新規：フェーズ5 の左右配置（ドロップダウン＋氏名＋冒頭入力） */
-    .pref-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-    .pref-left { display:flex; gap:8px; align-items:center; min-width:260px; }
-    .pref-left select { padding:10px; border-radius:8px; border:1px solid #ccd; background:white; }
-    .name-input { width:200px; padding:10px; border-radius:8px; border:1px solid #ccd; box-sizing:border-box; }
-
-    /* メール送信用タグUI */
-    .tagsWrap { display:flex; gap:8px; align-items:center; margin-left:8px; }
-    .tagsContainer { display:flex; gap:6px; flex-wrap:wrap; align-items:center; max-width:420px; }
-    .tag { background:#e6f2ff; padding:6px 8px; border-radius:999px; font-size:13px; display:inline-flex; gap:8px; align-items:center; }
-    .tag button { background:transparent; border:none; cursor:pointer; font-weight:600; color:#1565d8; padding:0 4px; }
-    .tagInput { min-width:160px; padding:8px; border-radius:8px; border:1px solid #ccd; }
-
-    /* メールボタン周辺 */
-    .mailControls { display:flex; gap:8px; align-items:center; margin-left:10px; }
-    .sendMailBtn { background:#1e88e5; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    /* new: responsive & small UI for tags and inline selector */
+    .inlineRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .bracketSelect { display:inline-flex; align-items:center; gap:6px; }
+    .bracketSelect select { padding:8px;border-radius:8px;border:1px solid #ccd;background:white; appearance: none; -webkit-appearance:none; }
+    .nameInput { max-width:320px; min-width:160px; }
+    .recipientTags { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .tag { background:#eef6ff; color:#083d77; padding:6px 8px; border-radius:999px; display:inline-flex; gap:8px; align-items:center; font-size:13px; }
+    .tag button { background:transparent; border:none; cursor:pointer; font-weight:700; color:#083d77; padding:0 4px; }
+    .tagInput { border:1px dashed #cbd6e6; min-width:180px; padding:6px 8px; border-radius:8px; }
+    @media (max-width:640px){
+      body{padding:12px}
+      .card{padding:12px}
+      .bracketSelect select{padding:6px}
+    }
   </style>
 </head>
 <body>
@@ -85,6 +83,7 @@
     <p class="small">思ったことをそのまま書き出します（長文可）。</p>
     <textarea id="rawText" rows="6" placeholder="ここに思っていることを自由に書いてください..."></textarea>
     <div style="margin-top:10px">
+      <!-- hx-push-url は要件どおり付与。実際の表示は JS の navigatePhase で行う -->
       <button id="toPhase2" hx-push-url="true" data-phase="phase2" class="btn-next">5つに分解する → フェーズ2</button>
     </div>
   </section>
@@ -94,7 +93,7 @@
     <h2>フェーズ2 — 5つの要素に分解</h2>
     <p class="small">入力を自動で文や句に分割します。編集して1要素ずつ丁寧に整えてください（空欄は追加できます）。</p>
     <ul id="elementsList"></ul>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button id="backTo1" class="secondary" hx-push-url="true" data-phase="phase1">戻る</button>
       <button id="toPhase3" hx-push-url="true" data-phase="phase3" class="btn-next">優先度チェック → フェーズ3</button>
     </div>
@@ -126,27 +125,29 @@
   <section class="card hidden" id="phase5">
     <h2>フェーズ5 — 相手に伝える文章を作る</h2>
     <p class="small">選ばれた3つを短く、具体的な一言ずつにまとめます。相手に伝えるときの冒頭（目的）と最後（お願い／確認）も用意します。</p>
-
-    <!-- 新規: ドロップダウン＋氏名＋冒頭（左にドロップダウン） -->
-    <div class="pref-row">
-      <div class="pref-left">
-        <label for="prefSelect" class="small" style="margin-right:6px;">区分</label>
-        <select id="prefSelect" aria-label="区分選択">
-          <option value="（空欄）">（空欄）</option>
+    <div class="inlineRow" style="margin-bottom:8px;">
+      <div class="bracketSelect" aria-hidden="true">
+        <label class="small" for="typeSelect">分類</label>
+        <span style="font-size:13px;">【</span>
+        <select id="typeSelect" aria-label="分類(報告/連絡/相談/緊急)"><!-- 表示は【】付き -->
+          <option value="">（空欄）</option>
           <option value="報告">報告</option>
           <option value="連絡">連絡</option>
           <option value="相談">相談</option>
           <option value="緊急">緊急</option>
         </select>
-        <input id="yourName" type="text" class="name-input" placeholder="氏名（例：内田 亘俊）" />
+        <span style="font-size:13px;">】</span>
       </div>
 
       <div style="flex:1">
-        <label class="small">冒頭（目的）</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。" />
-        </div>
+        <label class="small">氏名</label>
+        <input id="personName" class="nameInput" type="text" placeholder="例：山田 太郎">
       </div>
+    </div>
+
+    <div style="margin-top:6px">
+      <label class="small">冒頭（目的）</label>
+      <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
     </div>
 
     <ul id="finalInputs"></ul>
@@ -154,7 +155,7 @@
       <label class="small">締め（お願い／確認）</label>
       <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button id="backTo4" class="secondary" hx-push-url="true" data-phase="phase4">戻る</button>
       <button id="toPhase6" hx-push-url="true" data-phase="phase6" class="btn-next">完成 → フェーズ6</button>
     </div>
@@ -165,18 +166,31 @@
     <h2>フェーズ6 — 完成</h2>
     <p class="small">下が相手に伝えるための最終文章です。編集もできます。</p>
     <div class="final" id="finalMessage" contenteditable="false"></div>
-    <div style="display:flex;gap:8px;margin-top:10px; align-items:center">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
       <button id="copyBtn">コピー</button>
       <button id="editBtn" class="secondary">編集する</button>
       <button id="resetBtn" class="secondary">最初からやり直す</button>
+      <!-- PDFボタンはスクリプトで生成して追加（動的ロード対応） -->
+    </div>
 
-      <!-- PDF & メール領域（PDFボタンはスクリプトで生成） -->
-      <div id="pdfAndMail" style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-        <!-- pdfBtn will be appended here by script -->
+    <!-- recipients and mail controls -->
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1; min-width:220px;">
+        <label class="small">送信先（メールアドレス）</label>
+        <div class="recipientTags" id="recipientTags" aria-live="polite" style="margin-top:6px;">
+          <!-- tags go here -->
+          <input id="tagInput" class="tagInput" placeholder="メールアドレスを入力して Enter またはカンマで追加" />
+        </div>
+        <div class="small" style="margin-top:6px;color:#666">複数可。削除はタグの × をクリック。</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;">
+        <!-- PDF and Send buttons are placed together -->
+        <!-- PDF button will be inserted by JS with id=pdfBtn -->
+        <button id="sendMailBtn" style="background:#2e7d32;">✉️ メール下書きを作成</button>
       </div>
     </div>
 
-    <!-- hidden area for mail controls (added by script next to PDF) -->
   </section>
 
   <script>
@@ -184,7 +198,7 @@
     const qs = sel => document.querySelector(sel);
     const qsa = sel => Array.from(document.querySelectorAll(sel));
 
-    // phases
+    // phases 定義
     const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
 
     // --- フェーズ表示制御 ---
@@ -247,7 +261,7 @@
 
     function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // --- フェーズ1 -> フェーズ2 ---
+    // --- Phase1 -> Phase2 ---
     qs('#toPhase2').addEventListener('click', ()=>{
       const raw = qs('#rawText').value.trim();
       const arr = splitIntoPieces(raw,5);
@@ -273,7 +287,7 @@
 
     qs('#backTo1').addEventListener('click', ()=>{ showPhase('phase1'); });
 
-    // allow add/delete element fields (フェーズ2 内)
+    // add/delete element fields
     qs('#elementsList').addEventListener('click', (ev)=>{
       const b = ev.target.closest('button'); if(!b) return;
       const action = b.dataset.action; const idx = Number(b.dataset.index);
@@ -406,18 +420,18 @@
 
     qs('#backTo4').addEventListener('click', ()=>{ showPhase('phase4'); });
 
-    // Phase5 -> Phase6 (build final message)
+    // Phase5 -> Phase6 (build final message & prefill person name)
     qs('#toPhase6').addEventListener('click', ()=>{
       const intro = qs('#intro').value.trim();
       const closing = qs('#closing').value.trim();
+      const name = qs('#personName').value.trim();
       const pieces = qsa('.finalPiece').map(t=>t.value.trim()).filter(Boolean);
-      const name = qs('#yourName').value.trim();
-      const prefix = qs('#prefSelect').value || '（空欄）';
-      // Build final message: include prefix/intro/pieces/closing and reflect name at end
-      const final = buildFinalMessage(intro,pieces,closing,name,prefix);
-      qs('#finalMessage').textContent = final;
-      ensurePdfAndMailUi(); // set up PDF & mail UI when entering phase6
+      const final = buildFinalMessage(intro,pieces,closing);
+      // append name at end separated by newline for email body usage when sending
+      qs('#finalMessage').textContent = final + (name ? ("\n\n" + name) : "");
       showPhase('phase6');
+      // ensure recipient input cleared placeholder is focused
+      qs('#tagInput').focus();
     });
 
     // copy
@@ -437,19 +451,11 @@
     qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
     qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) { location.hash = '#phase1'; showPhase('phase1'); } });
 
-    // helpers
-    function buildFinalMessage(intro,pieces,closing,name,prefix){
+    function buildFinalMessage(intro,pieces,closing){
       const lines = [];
-      // prefix in brackets if not blank
-      const formattedPrefix = (prefix && prefix !== '（空欄）') ? `【${prefix}】 ` : '';
-      if(formattedPrefix || intro) lines.push(formattedPrefix + (intro || ''));
+      if(intro) lines.push(intro);
       pieces.forEach((p,i)=>{ lines.push((i+1) + '. ' + p); });
       if(closing) lines.push(closing);
-      // append name at the end (on its own line)
-      if(name) {
-        lines.push('');
-        lines.push(name);
-      }
       return lines.join('\n');
     }
 
@@ -485,214 +491,204 @@
     `;
     document.body.appendChild(footer);
 
-    // ===== PDF出力機能（html2canvas + jsPDF を動的ロード） =====
-    async function loadScript(src){
-      return new Promise((resolve, reject)=>{
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error('failed to load ' + src));
-        document.head.appendChild(s);
+    // ===== recipients tag input handling =====
+    const tagInput = qs('#tagInput');
+    const recipientTags = qs('#recipientTags');
+    let recipients = []; // array of email strings
+
+    function renderRecipientTags(){
+      // remove existing tag nodes except the input
+      const inputs = Array.from(recipientTags.children);
+      inputs.forEach(child => {
+        if(child !== tagInput) recipientTags.removeChild(child);
+      });
+      // insert tags before the input
+      recipients.forEach((r, i) => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.innerHTML = `<span>${escapeHtml(r)}</span><button aria-label="削除" data-idx="${i}">×</button>`;
+        recipientTags.insertBefore(span, tagInput);
       });
     }
 
-    // Ensure PDF button + Mail UI exist (called when entering phase6)
-    let pdfAndMailInitialized = false;
-    function ensurePdfAndMailUi(){
-      if(pdfAndMailInitialized) return;
-      pdfAndMailInitialized = true;
-
-      const container = qs('#pdfAndMail');
-
-      // create PDF button
-      const pdfBtn = document.createElement('button');
-      pdfBtn.textContent = '🖨️ PDFとして保存';
-      pdfBtn.style.marginLeft = '8px';
-      pdfBtn.id = 'pdfBtn';
-      container.appendChild(pdfBtn);
-
-      // create tags UI for recipients
-      const tagsWrap = document.createElement('div');
-      tagsWrap.className = 'tagsWrap';
-      tagsWrap.innerHTML = `
-        <div class="tagsContainer" id="tagsContainer" aria-live="polite"></div>
-        <input id="tagInput" class="tagInput" placeholder="メールアドレスを入力して Enter / , で追加" />
-      `;
-      container.appendChild(tagsWrap);
-
-      // send mail button
-      const sendBtn = document.createElement('button');
-      sendBtn.className = 'sendMailBtn';
-      sendBtn.textContent = 'メール下書きを作成';
-      sendBtn.id = 'sendMailBtn';
-      container.appendChild(sendBtn);
-
-      // tag handling
-      const tagsContainer = tagsWrap.querySelector('#tagsContainer');
-      const tagInput = tagsWrap.querySelector('#tagInput');
-      const tags = [];
-
-      function renderTags(){
-        tagsContainer.innerHTML = '';
-        tags.forEach((t, idx)=>{
-          const span = document.createElement('span'); span.className = 'tag';
-          span.innerHTML = `<span title="${t}">${t}</span><button type="button" data-idx="${idx}">✕</button>`;
-          tagsContainer.appendChild(span);
-        });
-      }
-
-      function addTag(text){
-        const trimmed = text.trim();
-        if(!trimmed) return;
-        // allow multiple separated by commas
-        const parts = trimmed.split(',').map(s=>s.trim()).filter(Boolean);
-        parts.forEach(p=>{
-          if(!validateEmail(p)){ alert('無効なメールアドレス: ' + p); return; }
-          if(!tags.includes(p)) tags.push(p);
-        });
-        renderTags();
-      }
-
-      function validateEmail(email){
-        // simple regex validation (not perfect but practical)
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      }
-
-      tagInput.addEventListener('keydown', (ev)=>{
-        if(ev.key === 'Enter' || ev.key === ','){
-          ev.preventDefault();
-          addTag(tagInput.value);
-          tagInput.value = '';
-        } else if(ev.key === 'Backspace' && tagInput.value === ''){
-          // remove last
-          tags.pop();
-          renderTags();
+    function normalizeAndAddEmails(raw){
+      if(!raw) return;
+      // split by comma or whitespace
+      const parts = raw.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
+      parts.forEach(p=>{
+        const email = p;
+        if(validateEmail(email) && !recipients.includes(email)){
+          recipients.push(email);
         }
       });
-      // also allow paste of comma-separated list
-      tagInput.addEventListener('paste', (ev)=>{
-        const text = (ev.clipboardData || window.clipboardData).getData('text');
-        if(text && text.includes(',')){
-          ev.preventDefault();
-          addTag(text);
-          tagInput.value = '';
-        }
-      });
-      // click remove
-      tagsContainer.addEventListener('click', (ev)=>{
-        const b = ev.target.closest('button'); if(!b) return;
-        const idx = Number(b.dataset.idx);
-        if(!isNaN(idx)) tags.splice(idx,1);
-        renderTags();
-      });
+      renderRecipientTags();
+      tagInput.value = '';
+    }
 
-      // PDF button click handling
-      pdfBtn.addEventListener('click', async ()=>{
-        try {
-          pdfBtn.disabled = true;
-          const prev = pdfBtn.textContent;
-          pdfBtn.textContent = 'PDF生成中...';
+    function validateEmail(email){
+      // simple RFC-like check (not exhaustive) to avoid obviously invalid addresses
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    tagInput.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter' || ev.key === ',' ){
+        ev.preventDefault();
+        normalizeAndAddEmails(tagInput.value);
+      } else if(ev.key === 'Backspace' && tagInput.value === '' && recipients.length>0){
+        // remove last
+        recipients.pop();
+        renderRecipientTags();
+      }
+    });
+    tagInput.addEventListener('blur', ()=>{ normalizeAndAddEmails(tagInput.value); });
+
+    recipientTags.addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button[data-idx]');
+      if(!b) return;
+      const idx = Number(b.dataset.idx);
+      if(!isNaN(idx)){
+        recipients.splice(idx,1);
+        renderRecipientTags();
+      }
+    });
+
+    // ===== PDF出力機能（html2canvas + jsPDF を動的ロード） =====
+    (function addPdfButtonAndHandler(){
+      try {
+        const pdfBtn = document.createElement('button');
+        pdfBtn.textContent = '🖨️ PDFとして保存';
+        pdfBtn.style.marginLeft = '8px';
+        pdfBtn.id = 'pdfBtn';
+        const controls = qs('#phase6').querySelector('div[style*="display:flex;gap:8px"]');
+        if (controls) controls.appendChild(pdfBtn);
+
+        async function loadScript(src){
+          return new Promise((resolve, reject)=>{
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('failed to load ' + src));
+            document.head.appendChild(s);
+          });
+        }
+
+        async function ensureLibs(){
           if(!window.html2canvas){
             await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
           }
           if(!window.jspdf){
             await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
           }
-          if(!(window.html2canvas && (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF))))) throw new Error('PDF libraries not available');
+        }
 
-          // prepare printable card
-          const card = document.createElement('div');
-          card.style.padding = '20px';
-          card.style.background = 'white';
-          card.style.borderRadius = '12px';
-          card.style.boxShadow = '0 6px 18px rgba(20,30,60,0.08)';
-          card.style.width = '700px';
-          card.style.fontFamily = 'system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
-          card.innerHTML = `
-            <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — I Message to You About My Mind.</h2>
-            <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(qs('#finalMessage').textContent)}</div>
-            <hr style="margin:20px 0;">
-            <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 🧠 3M — I Message to You About My Mind.</p>
-          `;
-          document.body.appendChild(card);
+        pdfBtn.addEventListener('click', async ()=>{
+          try {
+            pdfBtn.disabled = true;
+            const prev = pdfBtn.textContent;
+            pdfBtn.textContent = 'PDF生成中...';
+            await ensureLibs();
 
-          const canvas = await window.html2canvas(card, {scale:2});
-          const imgData = canvas.toDataURL('image/png');
+            if(!(window.html2canvas && (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF))))) throw new Error('PDF libraries not available');
 
-          const jsPDFConstructor = (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF)));
-          const pdf = new jsPDFConstructor({orientation:'p', unit:'px', format:'a4'});
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const imgWidth = pageWidth - 40;
-          const imgHeight = canvas.height * imgWidth / canvas.width;
+            const card = document.createElement('div');
+            card.style.padding = '20px';
+            card.style.background = 'white';
+            card.style.borderRadius = '12px';
+            card.style.boxShadow = '0 6px 18px rgba(20,30,60,0.08)';
+            card.style.width = '700px';
+            card.style.fontFamily = 'system-ui, -apple-system, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
+            card.innerHTML = `
+              <h2 style="text-align:center; color:#1565d8; margin-bottom:10px;">🧠 3M — I Message to You About My Mind.</h2>
+              <div style="white-space:pre-wrap; color:#111; line-height:1.7;">${escapeHtml(qs('#finalMessage').textContent)}</div>
+              <hr style="margin:20px 0;">
+              <p style="font-size:12px; text-align:center; color:#666;">Generated safely by 🧠 3M — I Message to You About My Mind.</p>
+            `;
+            document.body.appendChild(card);
 
-          const now = new Date();
-          const options = {
-            timeZone: "Asia/Tokyo",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-          };
-          const formatted = new Intl.DateTimeFormat("ja-JP", options)
+            const canvas = await window.html2canvas(card, {scale:2});
+            const imgData = canvas.toDataURL('image/png');
+
+            const jsPDFConstructor = (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF)));
+            const pdf = new jsPDFConstructor({orientation:'p', unit:'px', format:'a4'});
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const imgWidth = pageWidth - 40;
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+
+            const now = new Date();
+
+            const options = {
+              timeZone: "Asia/Tokyo",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit"
+            };
+
+            const formatted = new Intl.DateTimeFormat("ja-JP", options)
               .format(now)
               .replace(/\//g, "-")
               .replace(",", "")
               .replace(" ", "_")
               .replace(/:/g, "-");
+            
+            pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+            pdf.save('3M-Message_'+formatted+'.pdf');
+            document.body.removeChild(card);
+            pdfBtn.textContent = prev;
+            pdfBtn.disabled = false;
+          } catch(err){
+            console.error(err);
+            alert('PDF生成中にエラーが発生しました。コンソールを確認してください。');
+            pdfBtn.disabled = false;
+            pdfBtn.textContent = '🖨️ PDFとして保存';
+          }
+        });
+      } catch(e) {
+        console.error('PDF button failed to initialize', e);
+      }
+    })();
 
-          pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
-          pdf.save('3M-Message_'+formatted+'.pdf');
-          document.body.removeChild(card);
-          pdfBtn.textContent = prev;
-          pdfBtn.disabled = false;
-        } catch(err){
-          console.error(err);
-          alert('PDF生成中にエラーが発生しました。コンソールを確認してください。');
-          pdfBtn.disabled = false;
-          pdfBtn.textContent = '🖨️ PDFとして保存';
-        }
-      });
-
-      // Send Mail button behavior: build mailto: link that opens user's mail client with draft
-      qs('#sendMailBtn').addEventListener('click', ()=>{
-        if(tags.length === 0){
-          alert('送信先が登録されていません。メールアドレスを入力して Enter / , で追加してください。');
+    // ===== Mail send (mailto: draft) =====
+    qs('#sendMailBtn').addEventListener('click', ()=>{
+      // recipients array, subject built from select + intro, body from finalMessage
+      if(recipients.length === 0){
+        if(!confirm('送信先が指定されていません。メール下書きを作成しますか？（メールクライアントが宛先空で開きます）')) {
           return;
         }
-        const invalid = tags.find(t => !validateEmail(t));
-        if(invalid){
-          alert('無効なメールアドレスがあります: ' + invalid);
-          return;
-        }
+      }
+      // build subject
+      const selectVal = qs('#typeSelect').value || '';
+      const intro = qs('#intro').value.trim() || '';
+      const subject = (selectVal ? ('【' + selectVal + '】 ') : '') + intro;
+      let body = qs('#finalMessage').textContent || '';
+      // Ensure name appended: if personName exists and not already appended as separate line, append
+      const name = qs('#personName').value.trim();
+      if(name && !body.endsWith(name) && !body.includes('\n' + name)) {
+        body = body + '\n\n' + name;
+      }
 
-        // Subject: [prefix] + intro
-        const prefix = qs('#prefSelect').value || '（空欄）';
-        const intro = qs('#intro').value.trim();
-        const formattedPrefix = (prefix && prefix !== '（空欄）') ? `【${prefix}】 ` : '';
-        const subject = (formattedPrefix + intro).trim() || '（件名なし）';
+      // encode mailto
+      const to = recipients.join(',');
+      // encode subject and body with encodeURIComponent but preserve newlines as %0D%0A
+      function encodeBody(s){
+        // turn CRLF into %0D%0A
+        return encodeURIComponent(s).replace(/%0A/g, '%0D%0A');
+      }
 
-        // Body: final message + two newlines + (氏名 if present)
-        let body = qs('#finalMessage').textContent || '';
-        // Ensure name is at end (if user edited finalMessage manually, we don't append extra)
-        const name = qs('#yourName').value.trim();
-        if(name && !body.trim().endsWith(name)) body = body + '\n\n' + name;
+      const mailto = 'mailto:' + encodeURIComponent(to) +
+        '?subject=' + encodeURIComponent(subject) +
+        '&body=' + encodeBody(body);
 
-        // Build mailto
-        const to = tags.join(',');
-        // mailto encoding
-        const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        // Create temporary anchor and click to open mail client
-        const a = document.createElement('a');
-        a.href = mailto;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-    } // ensurePdfAndMailUi end
+      // use window.open to create draft in external mail client
+      try {
+        window.open(mailto, '_blank');
+      } catch(e){
+        // fallback: location.href
+        location.href = mailto;
+      }
+    });
 
     // Optional: handle browser back/forward to show phase from hash
     window.addEventListener('hashchange', ()=>{
@@ -700,7 +696,7 @@
       if (qs('#' + frag)) showPhase(frag);
     }, false);
 
-    // Minimal HTMX hooks placeholder
+    // Safety: reserved htmx hook (no-op)
     document.body.addEventListener('htmx:beforeRequest', function(evt){});
 
   </script>
