@@ -137,6 +137,9 @@
     const qs = sel => document.querySelector(sel);
     const qsa = sel => Array.from(document.querySelectorAll(sel));
 
+    // phases 定義（showPhase 内で参照していた未定義の変数を修正）
+    const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
+
     // --- フェーズ表示制御（HTMX 履歴 push を利用） ---
     function showPhase(phaseId, options = {}) {
       // hide all phase sections and show the requested one.
@@ -149,15 +152,12 @@
       const frag = '#' + phaseId;
       try {
         if (window.htmx && typeof htmx.pushUrl === 'function') {
-          // htmx.pushUrl expects a URL; use current path + fragment
           htmx.pushUrl(location.pathname + frag);
         } else {
-          // Fallback
           history.replaceState(null, '', location.pathname + frag);
         }
       } catch (e) {
-        // silent fallback
-        try { history.replaceState(null, '', location.pathname + frag); } catch (_){}
+        try { history.replaceState(null, '', location.pathname + frag); } catch (_){ }
       }
 
       const idx = phases.indexOf(phaseId);
@@ -165,7 +165,7 @@
       const pct = Math.round(((idx+1) / total) * 100);
       const bar = qs('#progressBar'); if(bar) bar.style.width = pct + '%';
       const label = qs('#progressLabel'); if(label) label.textContent = `Phase ${idx+1} / ${total}`;
-      
+
       // optional callback after showing
       if (options && typeof options.after === 'function') options.after();
     }
@@ -180,7 +180,6 @@
     // Attach all buttons that have data-phase to navigate via showPhase
     qsa('button[data-phase]').forEach(btn=>{
       btn.addEventListener('click', (ev)=>{
-        // prevent default just in case
         ev && ev.preventDefault && ev.preventDefault();
         const target = btn.getAttribute('data-phase');
         if (!target) return;
@@ -198,7 +197,6 @@
       pieces = pieces.map(s=>s.trim()).filter(Boolean);
       // If still more than maxPieces, join short ones
       if(pieces.length > maxPieces){
-        // try to merge from end
         while(pieces.length > maxPieces){
           let a = pieces.splice(pieces.length-2,2).join(' ');
           pieces.push(a);
@@ -222,7 +220,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
+            <input type="text" data-index="${i}" class="elementInput" />
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
@@ -230,8 +228,9 @@
           </div>
         `;
         ul.appendChild(li);
+        // assign value safely (avoid double-escaping in attribute)
+        const input = li.querySelector('.elementInput'); if(input) input.value = t;
       });
-      // show phase2 (this will update URL via showPhase)
       showPhase('phase2');
     });
 
@@ -253,13 +252,14 @@
         const li = document.createElement('li'); li.className='item'; li.innerHTML=`
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" value="${escapeHtml(t)}" />
+            <input type="text" data-index="${i}" class="elementInput" />
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
             <button class="secondary" data-action="del" data-index="${i}">－</button>
           </div>`;
         ul.appendChild(li);
+        const input = li.querySelector('.elementInput'); if(input) input.value = t;
       });
     });
 
@@ -272,7 +272,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" class="ptext" data-i="${i}" value="${escapeHtml(t)}" />
+            <input type="text" class="ptext" data-i="${i}" />
           </div>
           <div style="width:220px">
             <label class="small">緊急性 (0-5)</label>
@@ -283,6 +283,7 @@
           </div>
         `;
         ul.appendChild(li);
+        const textInput = li.querySelector('.ptext'); if(textInput) textInput.value = t;
       });
       showPhase('phase3');
     });
@@ -312,7 +313,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">優先 ${idx+1}</label>
-            <input type="text" class="ordtext" data-idx="${idx}" value="${escapeHtml(it.text)}" />
+            <input type="text" class="ordtext" data-idx="${idx}" />
           </div>
           <div class="controls">
             <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
@@ -320,6 +321,7 @@
           </div>
         `;
         ul.appendChild(li);
+        const ordInput = li.querySelector('.ordtext'); if(ordInput) ordInput.value = it.text;
       });
 
       showPhase('phase4');
@@ -340,13 +342,14 @@
         const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `
           <div style="flex:1">
             <label class="small">優先 ${i+1}</label>
-            <input type="text" class="ordtext" data-idx="${i}" value="${escapeHtml(t)}" />
+            <input type="text" class="ordtext" data-idx="${i}" />
           </div>
           <div class="controls">
             <button class="secondary" data-action="up" data-idx="${i}">↑</button>
             <button class="secondary" data-action="down" data-idx="${i}">↓</button>
           </div>`;
         ul.appendChild(li);
+        const ordInput = li.querySelector('.ordtext'); if(ordInput) ordInput.value = t;
       });
     });
 
@@ -359,9 +362,10 @@
         const li = document.createElement('li'); li.className='item'; li.innerHTML = `
           <div style="flex:1">
             <label class="small">伝える文 ${i+1}（短く具体的に）</label>
-            <textarea rows="2" class="finalPiece">${escapeHtml(t)}</textarea>
+            <textarea rows="2" class="finalPiece"></textarea>
           </div>`;
         ul.appendChild(li);
+        const ta = li.querySelector('.finalPiece'); if(ta) ta.value = t;
       });
       showPhase('phase5');
     });
@@ -384,7 +388,6 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(()=> alert('文章をコピーしました。'), ()=> alert('コピーに失敗しました。'));
       } else {
-        // fallback
         const ta = document.createElement('textarea');
         ta.value = txt;
         document.body.appendChild(ta);
@@ -394,7 +397,7 @@
       }
     });
     qs('#editBtn').addEventListener('click', ()=>{ qs('#finalMessage').contentEditable = true; qs('#finalMessage').focus(); });
-    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) location.href='#phase1' });
+    qs('#resetBtn').addEventListener('click', ()=>{ if(confirm('最初からやり直しますか？')) { location.hash = '#phase1'; showPhase('phase1'); } });
 
     // helpers
     function buildFinalMessage(intro,pieces,closing){
@@ -439,7 +442,6 @@
 
     // ===== PDF出力機能（html2canvas + jsPDF を動的ロード） =====
     (function addPdfButtonAndHandler(){
-      // add PDF button next to copy/edit/reset (in phase6)
       try {
         const pdfBtn = document.createElement('button');
         pdfBtn.textContent = '🖨️ PDFとして保存';
@@ -452,8 +454,8 @@
           return new Promise((resolve, reject)=>{
             const s = document.createElement('script');
             s.src = src;
-            s.onload = resolve;
-            s.onerror = reject;
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('failed to load ' + src));
             document.head.appendChild(s);
           });
         }
@@ -470,10 +472,13 @@
         pdfBtn.addEventListener('click', async ()=>{
           try {
             pdfBtn.disabled = true;
+            const prev = pdfBtn.textContent;
             pdfBtn.textContent = 'PDF生成中...';
             await ensureLibs();
-            const { jsPDF } = window.jspdf || (window.jspdf = {});
-            // build a card element to render
+
+            if(!(window.html2canvas && (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF))))) throw new Error('PDF libraries not available');
+
+            // prepare a printable card
             const card = document.createElement('div');
             card.style.padding = '20px';
             card.style.background = 'white';
@@ -489,10 +494,12 @@
             `;
             document.body.appendChild(card);
 
-            const canvas = await html2canvas(card, {scale:2});
+            const canvas = await window.html2canvas(card, {scale:2});
             const imgData = canvas.toDataURL('image/png');
 
-            const pdf = new window.jspdf.jsPDF({orientation:'p', unit:'px', format:'a4'});
+            // use the available jsPDF constructor
+            const jsPDFConstructor = (window.jspdf && (window.jspdf.jsPDF || (window.jspdf.default && window.jspdf.default.jsPDF)));
+            const pdf = new jsPDFConstructor({orientation:'p', unit:'px', format:'a4'});
             const pageWidth = pdf.internal.pageSize.getWidth();
             const imgWidth = pageWidth - 40;
             const imgHeight = canvas.height * imgWidth / canvas.width;
@@ -501,13 +508,13 @@
             pdf.save('3M_Message.pdf');
 
             document.body.removeChild(card);
-            pdfBtn.textContent = '🖨️ PDFとして保存';
+            pdfBtn.textContent = prev;
             pdfBtn.disabled = false;
           } catch(err){
             console.error(err);
-            alert('PDF生成中にエラーが発生しました。再度お試しください。');
-            pdfBtn.textContent = '🖨️ PDFとして保存';
+            alert('PDF生成中にエラーが発生しました。コンソールを確認してください。');
             pdfBtn.disabled = false;
+            pdfBtn.textContent = '🖨️ PDFとして保存';
           }
         });
       } catch(e) {
@@ -526,28 +533,6 @@
       // no-op but reserved for future enhancements
     });
 
-    // フェーズ配列（進捗計算用）
-  const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
-
-  // PDFボタンを動的追加
-  window.addEventListener('DOMContentLoaded', ()=>{
-    import('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js').then(()=>{
-      const pdfBtn = document.createElement('button');
-      pdfBtn.textContent = 'PDFとして保存';
-      pdfBtn.style.background = '#16a085';
-      pdfBtn.style.color = 'white';
-      pdfBtn.addEventListener('click', ()=>{
-        const element = document.getElementById('finalMessage');
-        html2pdf().set({
-          filename: '3M_Message.pdf',
-          margin: 10,
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).save();
-      });
-      document.querySelector('#phase6 div[style*="display:flex"]').appendChild(pdfBtn);
-    });
-  });
   </script>
 </body>
 </html>
