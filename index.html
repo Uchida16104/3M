@@ -526,6 +526,28 @@
       // no-op but reserved for future enhancements
     });
 
+    // フェーズ配列（進捗計算用）
+  const phases = ['phase1','phase2','phase3','phase4','phase5','phase6'];
+
+  // PDFボタンを動的追加
+  window.addEventListener('DOMContentLoaded', ()=>{
+    import('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js').then(()=>{
+      const pdfBtn = document.createElement('button');
+      pdfBtn.textContent = 'PDFとして保存';
+      pdfBtn.style.background = '#16a085';
+      pdfBtn.style.color = 'white';
+      pdfBtn.addEventListener('click', ()=>{
+        const element = document.getElementById('finalMessage');
+        html2pdf().set({
+          filename: '3M_Message.pdf',
+          margin: 10,
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(element).save();
+      });
+      document.querySelector('#phase6 div[style*="display:flex"]').appendChild(pdfBtn);
+    });
+  });
   </script>
 </body>
 </html>
