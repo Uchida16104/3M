@@ -149,7 +149,7 @@
 
 ## 📜 ライセンス
 
-<a href="https://github.com/Uchida16104/3M/blob/main/LICENSE" style="text-decoration: none;">MIT License</a> © 2025 <a href="https://hirotoshiuchida.onrender.com" style="text-decoration: none;">Hirotoshi Uchida</a><a href="https://github.com/Uchida16104" style="text-decoration: none;">Uchida16104</a>
+<a href="https://github.com/Uchida16104/3M/blob/main/LICENSE" style="text-decoration: none;">MIT License</a> © 2025 <a href="https://hirotoshiuchida.onrender.com" style="text-decoration: none;">Hirotoshi Uchida</a><a href="https://github.com/Uchida16104" style="text-decoration: none;">(Uchida16104)</a>
 
 ---
 
