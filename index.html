@@ -140,19 +140,19 @@
 
       <div style="flex:1">
         <label class="small">氏名</label>
-        <input id="personName" class="nameInput" type="text" placeholder="例：山田 太郎">
+        <textarea id="personName" class="nameInput" rows="1" placeholder="例：山田 太郎"></textarea>
       </div>
     </div>
 
     <div style="margin-top:6px">
       <label class="small">冒頭（目的）</label>
-      <input type="text" id="intro" placeholder="例：今日は○○について話したくて来ました。">
+      <textarea id="intro" rows="1" placeholder="例：今日は○○について話したくて来ました。"></textarea>
     </div>
 
     <ul id="finalInputs"></ul>
     <div style="margin-top:8px">
       <label class="small">締め（お願い／確認）</label>
-      <input type="text" id="closing" placeholder="例：これについてどう思いますか？／助けてほしいです。">
+      <textarea id="closing" rows="1" placeholder="例：これについてどう思いますか？／助けてほしいです。"></textarea>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button id="backTo4" class="secondary" hx-push-url="true" data-phase="phase4">戻る</button>
@@ -271,7 +271,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" />
+            <textarea data-index="${i}" class="elementInput" rows="2"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
@@ -300,7 +300,7 @@
         const li = document.createElement('li'); li.className='item'; li.innerHTML=`
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" data-index="${i}" class="elementInput" />
+            <textarea data-index="${i}" class="elementInput" rows="2"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="add" data-index="${i}">＋</button>
@@ -320,7 +320,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">要素 ${i+1}</label>
-            <input type="text" class="ptext" data-i="${i}" />
+            <textarea class="ptext" data-i="${i}" rows="2"></textarea>
           </div>
           <div style="width:220px">
             <label class="small">緊急性 (0-5)</label>
@@ -341,7 +341,8 @@
     // Phase3 -> Phase4 (select top3)
     qs('#toPhase4').addEventListener('click', ()=>{
       const items = qsa('#priorityList .item').map(li=>{
-        const text = li.querySelector('.ptext').value.trim();
+        const textEl = li.querySelector('.ptext');
+        const text = textEl ? textEl.value.trim() : '';
         const urg = Number(li.querySelector('.urg').value)||0;
         const imp = Number(li.querySelector('.imp').value)||0;
         const pin = li.querySelector('.pin').checked;
@@ -361,7 +362,7 @@
         li.innerHTML = `
           <div style="flex:1">
             <label class="small">優先 ${idx+1}</label>
-            <input type="text" class="ordtext" data-idx="${idx}" />
+            <textarea class="ordtext" data-idx="${idx}" rows="2"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="up" data-idx="${idx}">↑</button>
@@ -389,7 +390,7 @@
         const li = document.createElement('li'); li.className='item draggable'; li.innerHTML = `
           <div style="flex:1">
             <label class="small">優先 ${i+1}</label>
-            <input type="text" class="ordtext" data-idx="${i}" />
+            <textarea class="ordtext" data-idx="${i}" rows="2"></textarea>
           </div>
           <div class="controls">
             <button class="secondary" data-action="up" data-idx="${i}">↑</button>
