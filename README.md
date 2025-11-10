@@ -149,8 +149,8 @@
 
 ## 📜 ライセンス
 
-MIT License  
-© 2025 Hirotoshi Uchida (Uchida16104)
+[MIT License]("https://github.com/Uchida16104/3M/blob/main/LICENSE")
+© 2025 [Hirotoshi Uchida]("https://hirotoshiuchida.onrender.com") ([Uchida16104]("https://github.com/Uchida16104"))
 
 ---
 
