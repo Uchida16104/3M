@@ -67,6 +67,11 @@
       .card{padding:12px}
       .bracketSelect select{padding:6px}
     }
+    @media (min-width: 640px) {
+    .btn-responsive {
+      width: auto;
+    }
+    }
   </style>
 </head>
 <body>
@@ -76,9 +81,12 @@
       <p>
         下位概念ツール：
         <span>
-          <a style="text-decoration: none; text-align: center; color: blue; font-weight: bold;" href="https://uchida16104.github.io/3S">3S</a>
+          <a style="text-decoration: none; text-align: center; color: blue; font-weight: bold;" href="https://github.com/Uchida16104/3S">3S</a>
         </span>
         （報連相ジェネレーター）
+        <button class="btn-responsive" style="background-color: #2563eb; color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.375rem; width: 100%;" hx-on:click="window.location.href='https://uchida16104.github.io/3S'">
+        3S へ移動
+        </button>
       </p>
   </section>
   <!-- プログレス（フェーズの進捗表示） -->
